@@ -9,6 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
+    // database/migrations/xxxx_xx_xx_xxxxxx_create_users_table.php
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -17,6 +18,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('role', ['admin_induk', 'admin_cabang']); // Role pengguna
+            $table->unsignedBigInteger('cabang_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
