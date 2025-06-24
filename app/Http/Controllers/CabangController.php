@@ -67,12 +67,31 @@ class CabangController extends Controller
      */
     public function destroy(Cabang $cabang)
     {
-        // Pencegahan sederhana agar tidak bisa menghapus jika ada relasi
+        // Cek relasi dengan Users
+        if ($cabang->users()->exists()) {
+            return redirect()->route('cabangs.index')
+                           ->with('error', 'Gagal menghapus! Masih ada user yang terdaftar di cabang ini.');
+        }
+
+        // Cek relasi dengan Distribusi
+        if ($cabang->distribusis()->exists()) {
+            return redirect()->route('cabangs.index')
+                           ->with('error', 'Gagal menghapus! Cabang ini memiliki riwayat transaksi distribusi.');
+        }
+
+        // Cek relasi dengan Penjualan
+        if ($cabang->penjualans()->exists()) {
+            return redirect()->route('cabangs.index')
+                           ->with('error', 'Gagal menghapus! Cabang ini memiliki riwayat transaksi penjualan.');
+        }
+        
         try {
             $cabang->delete();
-            return redirect()->route('cabangs.index')->with('success', 'Cabang berhasil dihapus.');
-        } catch (\Illuminate\Database\QueryException $e) {
-            return redirect()->route('cabangs.index')->with('error', 'Gagal menghapus cabang. Pastikan tidak ada user atau transaksi yang terkait dengan cabang ini.');
+            return redirect()->route('cabangs.index')
+                           ->with('success', 'Cabang berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->route('cabangs.index')
+                           ->with('error', 'Terjadi kesalahan saat menghapus cabang.');
         }
     }
     public function stokIndex()

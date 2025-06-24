@@ -89,10 +89,19 @@ class SupplierController extends Controller
      */
     public function destroy(Supplier $supplier)
     {
-        // Hapus data
-        $supplier->delete();
+        // Cek apakah supplier ini punya relasi dengan stok_masuks
+        if ($supplier->stokMasuks()->exists()) {
+            return redirect()->route('suppliers.index')
+                           ->with('error', 'Gagal menghapus! Supplier ini sudah memiliki riwayat transaksi stok masuk.');
+        }
 
-        // Redirect kembali ke halaman index dengan pesan sukses
-        return redirect()->route('suppliers.index')->with('success', 'Data supplier berhasil dihapus!');
+        try {
+            $supplier->delete();
+            return redirect()->route('suppliers.index')
+                           ->with('success', 'Supplier berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->route('suppliers.index')
+                           ->with('error', 'Terjadi kesalahan saat menghapus supplier.');
+        }
     }
 }

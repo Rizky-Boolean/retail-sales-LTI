@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/laporan', [LaporanController::class, 'indexInduk'])->name('laporan.induk.index');
         Route::get('/laporan/stok-induk', [LaporanController::class, 'stokInduk'])->name('laporan.induk.stok');
         Route::get('/laporan/pengeluaran', [LaporanController::class, 'rekapPengeluaran'])->name('laporan.induk.pengeluaran');
+
+        Route::get('/activity-logs', [App\Http\Controllers\ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     // Grup Rute HANYA untuk Admin Gudang Cabang

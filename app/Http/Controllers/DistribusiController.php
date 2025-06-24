@@ -8,6 +8,9 @@ use App\Models\Sparepart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Notifications\NewDistributionNotification;
+use Illuminate\Support\Facades\Notification;
 
 class DistribusiController extends Controller
 {
@@ -64,14 +67,12 @@ class DistribusiController extends Controller
         ]);
 
         try {
-            // Gunakan Transaction untuk memastikan konsistensi data
-            DB::transaction(function () use ($request) {
-                
+            // Simpan hasil transaction ke variabel
+            $distribusi = DB::transaction(function () use ($request) {
                 // 1. Validasi stok terlebih dahulu sebelum melakukan operasi apapun
                 foreach ($request->details as $item) {
                     $sparepart = Sparepart::find($item['sparepart_id']);
                     if ($sparepart->stok_induk < $item['qty']) {
-                        // Jika stok tidak cukup, batalkan semua proses dengan exception
                         throw ValidationException::withMessages([
                             'details' => "Stok untuk {$sparepart->nama_part} tidak mencukupi. Sisa stok: {$sparepart->stok_induk}.",
                         ]);
@@ -95,47 +96,52 @@ class DistribusiController extends Controller
                     $sparepart = Sparepart::find($item['sparepart_id']);
                     $qty = $item['qty'];
                     $hargaModal = $sparepart->harga_modal_terakhir;
-                    $hargaKirim = $hargaModal * 1.11; // Selalu dikenakan PPN 11%
+                    $hargaKirim = $hargaModal * 1.11;
 
-                    // Buat detail distribusi
                     $distribusi->details()->create([
                         'sparepart_id' => $sparepart->id, 'qty' => $qty,
                         'harga_modal_satuan' => $hargaModal, 'harga_kirim_satuan' => $hargaKirim,
                     ]);
 
-                    // Kurangi stok gudang induk
                     $sparepart->decrement('stok_induk', $qty);
 
-                    // Tambah/update stok di gudang cabang tujuan (via pivot table)
                     $cabang = Cabang::find($request->cabang_id_tujuan);
                     $stokCabang = $cabang->spareparts()->where('sparepart_id', $sparepart->id)->first();
 
-                    if ($stokCabang) { // Jika sparepart sudah pernah ada di cabang
+                    if ($stokCabang) {
                         $cabang->spareparts()->updateExistingPivot($sparepart->id, ['stok' => $stokCabang->pivot->stok + $qty]);
-                    } else { // Jika ini pertama kali sparepart dikirim ke cabang
+                    } else {
                         $cabang->spareparts()->attach($sparepart->id, ['stok' => $qty]);
                     }
 
-                    // Akumulasi total untuk diupdate ke header
                     $totalHargaModal += $hargaModal * $qty;
                     $totalHargaKirim += $hargaKirim * $qty;
                 }
 
-                // 4. Update total di header distribusi setelah semua detail diproses
                 $distribusi->update([
                     'total_harga_modal' => $totalHargaModal,
                     'total_ppn_distribusi' => $totalHargaKirim - $totalHargaModal,
                     'total_harga_kirim' => $totalHargaKirim,
                 ]);
+
+                return $distribusi; // Pastikan return objek distribusi
             });
 
-            return redirect()->route('distribusi.index')->with('success', 'Data distribusi berhasil disimpan!');
+            // [START] Logika untuk Mengirim Notifikasi
+            $targetUsers = User::where('role', 'admin_cabang')
+                               ->where('cabang_id', $distribusi->cabang_id_tujuan)
+                               ->get();
+
+            if ($targetUsers->isNotEmpty()) {
+                Notification::send($targetUsers, new NewDistributionNotification($distribusi));
+            }
+            // [END] Logika untuk Mengirim Notifikasi
+
+            return redirect()->route('distribusi.index')->with('success', 'Data distribusi berhasil disimpan dan notifikasi telah dikirim!');
 
         } catch (ValidationException $e) {
-            // Kembali ke form dengan error validasi (misal: stok tidak cukup)
             return redirect()->back()->withInput()->withErrors($e->errors());
         } catch (\Exception $e) {
-            // Kembali ke form dengan error umum
             return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
