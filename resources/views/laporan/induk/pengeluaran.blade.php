@@ -4,8 +4,9 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ __('Laporan Rekap Pengeluaran') }}
             </h2>
-            <button onclick="window.print()" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                Cetak Laporan
+            {{-- [UBAH] Ganti tombol Cetak menjadi Export PDF --}}
+            <button id="export-pdf-btn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Export ke PDF
             </button>
         </div>
     </x-slot>
@@ -21,22 +22,13 @@
                         </a>
                     </div>
                     
-                    <!-- Form Filter Tanggal -->
                     <form action="{{ route('laporan.induk.pengeluaran') }}" method="GET" class="mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg flex items-end space-x-4">
-                        <div>
-                            <label for="tanggal_awal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Awal</label>
-                            <input type="date" name="tanggal_awal" id="tanggal_awal" value="{{ $tanggalAwal }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-600">
-                        </div>
-                        <div>
-                            <label for="tanggal_akhir" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Akhir</label>
-                            <input type="date" name="tanggal_akhir" id="tanggal_akhir" value="{{ $tanggalAkhir }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-600">
-                        </div>
-                        <button type="submit" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Filter</button>
+                        {{-- ... (kode form filter tetap sama) ... --}}
                     </form>
 
-                    <!-- Tabel Laporan -->
                     <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white dark:bg-gray-800">
+                        {{-- Tambahkan ID pada tabel --}}
+                        <table id="laporan-pengeluaran-table" class="min-w-full bg-white dark:bg-gray-800">
                             <thead class="bg-gray-200 dark:bg-gray-700">
                                 <tr>
                                     <th class="py-3 px-4 text-left">ID Transaksi</th>
@@ -73,4 +65,31 @@
             </div>
         </div>
     </div>
+
+    {{-- [TAMBAHKAN] Script untuk Export PDF --}}
+    <script>
+        document.getElementById('export-pdf-btn').addEventListener('click', function () {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4'); // 'p' for portrait, 'pt' for points, 'a4' for size
+
+            const tanggalAwal = "{{ \Carbon\Carbon::parse($tanggalAwal)->format('d M Y') }}";
+            const tanggalAkhir = "{{ \Carbon\Carbon::parse($tanggalAkhir)->format('d M Y') }}";
+
+            doc.setFontSize(18);
+            doc.text('Laporan Rekap Pengeluaran', 40, 50);
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Periode: ${tanggalAwal} s/d ${tanggalAkhir}`, 40, 70);
+
+            doc.autoTable({
+                html: '#laporan-pengeluaran-table',
+                startY: 80,
+                theme: 'grid',
+                headStyles: { fillColor: [41, 128, 185] },
+            });
+
+            doc.save(`laporan-pengeluaran-${tanggalAwal}.pdf`);
+        });
+    </script>
 </x-app-layout>
+

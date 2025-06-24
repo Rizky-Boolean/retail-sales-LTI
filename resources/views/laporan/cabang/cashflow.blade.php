@@ -5,7 +5,6 @@
                 {{ __('Laporan Arus Kas (Cashflow)') }}
             </h2>
             <div>
-                <button onclick="window.print()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition">Cetak Langsung</button>
                 <button id="export-pdf-btn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition">Export ke PDF</button>
             </div>
         </div>

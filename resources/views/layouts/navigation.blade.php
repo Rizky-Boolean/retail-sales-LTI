@@ -39,6 +39,9 @@
                         <x-nav-link :href="route('cabangs.index')" :active="request()->routeIs('cabangs.*')">
                             {{ __('Manajemen Cabang') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.index')">
+                            {{ __('Log Aktivitas') }}
+                        </x-nav-link>
                     @endif
 
                     {{-- Menu hanya untuk Admin Cabang --}}
@@ -60,6 +63,27 @@
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+                <div class="ms-3 relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="relative p-2 rounded-full text-gray-400 hover:text-white focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        @if($unreadCount > 0)
+                            <span class="absolute top-0 right-0 block h-2 w-2 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-500 ring-2 ring-white"></span>
+                        @endif
+                    </button>
+                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20" style="display: none;">
+                        <div class="py-2">
+                            @forelse($notifications as $notification)
+                                <a href="{{-- Rute untuk menandai dibaca --}}" class="flex items-center px-4 py-3 border-b hover:bg-gray-100 dark:hover:bg-gray-700 -mx-2">
+                                    <p class="text-gray-600 dark:text-gray-200 text-sm mx-2">
+                                        {{ $notification->data['message'] }}
+                                    </p>
+                                </a>
+                            @empty
+                                <div class="px-4 py-3 text-center text-gray-500">Tidak ada notifikasi baru.</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
                 <!-- Settings Dropdown -->
                 <div class="ms-3 relative">
                     <x-dropdown align="right" width="48">
@@ -121,6 +145,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('cabangs.index')" :active="request()->routeIs('cabangs.*')">
                     {{ __('Manajemen Cabang') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.index')">
+                    {{ __('Log Aktivitas') }}
                 </x-responsive-nav-link>
             @endif
 

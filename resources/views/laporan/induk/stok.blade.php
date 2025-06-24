@@ -5,10 +5,6 @@
                 {{ __('Laporan Stok Gudang Induk') }}
             </h2>
             <div>
-                {{-- Tombol Cetak Bawaan Browser --}}
-                <button onclick="window.print()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition">
-                    Cetak Langsung
-                </button>
                 {{-- Tombol Baru untuk Export PDF --}}
                 <button id="export-pdf-btn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition">
                     Export ke PDF
