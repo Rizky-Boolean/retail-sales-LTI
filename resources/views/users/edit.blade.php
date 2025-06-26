@@ -27,10 +27,20 @@
                         <!-- Role -->
                         <div class="mt-4">
                             <x-input-label for="role" :value="__('Role')" />
-                            <select name="role" id="role" x-model="role" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-sm">
+                            <select name="role" id="role" x-model="role" 
+                                    class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-sm"
+                                    {{-- Tambahkan kondisi disabled ini --}}
+                                    @if(auth()->id() === $user->id) disabled @endif >
                                 <option value="admin_cabang">Admin Cabang</option>
                                 <option value="admin_induk">Admin Gudang Induk</option>
                             </select>
+                            <x-input-error :messages="$errors->get('role')" class="mt-2" />
+                            {{-- Tambahkan pesan informasi ini --}}
+                            @if(auth()->id() === $user->id)
+                                <p class="text-sm text-gray-500 mt-1">Anda tidak dapat mengubah role Anda sendiri.</p>
+                                {{-- Kirim nilai role yang lama secara tersembunyi agar validasi lolos --}}
+                                <input type="hidden" name="role" value="{{ $user->role }}">
+                            @endif
                         </div>
                         <!-- Cabang (Conditional) -->
                         <div class="mt-4" x-show="role === 'admin_cabang'">

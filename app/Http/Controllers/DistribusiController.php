@@ -58,7 +58,7 @@ class DistribusiController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'tanggal_distribusi' => 'required|date',
             'cabang_id_tujuan' => 'required|exists:cabangs,id',
             'details' => 'required|array|min:1',
@@ -68,9 +68,9 @@ class DistribusiController extends Controller
 
         try {
             // Simpan hasil transaction ke variabel
-            $distribusi = DB::transaction(function () use ($request) {
+            $distribusi = DB::transaction(function () use ($validated) {
                 // 1. Validasi stok terlebih dahulu sebelum melakukan operasi apapun
-                foreach ($request->details as $item) {
+                foreach ($validated['details'] as $item) {
                     $sparepart = Sparepart::find($item['sparepart_id']);
                     if ($sparepart->stok_induk < $item['qty']) {
                         throw ValidationException::withMessages([
@@ -81,9 +81,9 @@ class DistribusiController extends Controller
 
                 // 2. Buat record header distribusi (total masih 0)
                 $distribusi = Distribusi::create([
-                    'tanggal_distribusi' => $request->tanggal_distribusi,
+                    'tanggal_distribusi' => $validated['tanggal_distribusi'],
                     'user_id' => auth()->id(),
-                    'cabang_id_tujuan' => $request->cabang_id_tujuan,
+                    'cabang_id_tujuan' => $validated['cabang_id_tujuan'],
                     'status' => 'dikirim',
                     'total_harga_modal' => 0, 'total_ppn_distribusi' => 0, 'total_harga_kirim' => 0,
                 ]);
@@ -92,7 +92,7 @@ class DistribusiController extends Controller
                 $totalHargaKirim = 0;
 
                 // 3. Proses setiap item barang yang didistribusi
-                foreach ($request->details as $item) {
+                foreach ($validated['details'] as $item) {
                     $sparepart = Sparepart::find($item['sparepart_id']);
                     $qty = $item['qty'];
                     $hargaModal = $sparepart->harga_modal_terakhir;
@@ -105,7 +105,7 @@ class DistribusiController extends Controller
 
                     $sparepart->decrement('stok_induk', $qty);
 
-                    $cabang = Cabang::find($request->cabang_id_tujuan);
+                    $cabang = Cabang::find($validated['cabang_id_tujuan']);
                     $stokCabang = $cabang->spareparts()->where('sparepart_id', $sparepart->id)->first();
 
                     if ($stokCabang) {

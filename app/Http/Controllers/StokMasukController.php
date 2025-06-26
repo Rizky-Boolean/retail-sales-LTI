@@ -37,7 +37,7 @@ class StokMasukController extends Controller
         // GANTI SELURUH METHOD STORE ANDA DENGAN INI
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'tanggal_masuk' => 'required|date',
             'supplier_id' => 'required|exists:suppliers,id',
             'details' => 'required|array|min:1',
@@ -47,10 +47,10 @@ class StokMasukController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($request) {
+            DB::transaction(function () use ($validated) {
                 // ... (Kode untuk menghitung total & PPN masih sama)
                 $totalPembelian = 0;
-                foreach ($request->details as $detail) {
+                foreach ($validated['details'] as $detail) {
                     $totalPembelian += $detail['qty'] * $detail['harga_beli_satuan'];
                 }
                 $ppnNominal = 0;
@@ -61,13 +61,13 @@ class StokMasukController extends Controller
 
                 // ... (Kode untuk create StokMasuk header masih sama)
                 $stokMasuk = StokMasuk::create([
-                    'tanggal_masuk' => $request->tanggal_masuk, 'supplier_id' => $request->supplier_id, 'user_id' => auth()->id(),
+                    'tanggal_masuk' => $validated['tanggal_masuk'], 'supplier_id' => $validated['supplier_id'], 'user_id' => auth()->id(),
                     'total_pembelian' => $totalPembelian, 'total_ppn_supplier' => $ppnNominal, 'total_final' => $totalPembelian + $ppnNominal,
-                    'catatan' => $request->catatan,
+                    'catatan' => $validated['catatan'],
                 ]);
 
                 // [START] INI BAGIAN UTAMA YANG BERUBAH
-                foreach ($request->details as $detail) {
+                foreach ($validated['details'] as $detail) {
                     $sparepart = Sparepart::find($detail['sparepart_id']);
                     $hargaBeli = $detail['harga_beli_satuan'];
                     

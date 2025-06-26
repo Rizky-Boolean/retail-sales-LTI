@@ -29,12 +29,12 @@ class CabangController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nama_cabang' => 'required|string|max:255',
             'alamat' => 'nullable|string',
         ]);
 
-        Cabang::create($request->all());
+        Cabang::create($validated);
 
         return redirect()->route('cabangs.index')->with('success', 'Cabang baru berhasil dibuat.');
     }

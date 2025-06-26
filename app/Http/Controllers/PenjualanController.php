@@ -41,7 +41,7 @@ class PenjualanController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'tanggal_penjualan' => 'required|date',
             'nama_pembeli' => 'nullable|string|max:255',
             'details' => 'required|array|min:1',
@@ -53,9 +53,9 @@ class PenjualanController extends Controller
         $cabang = $user->cabang;
 
         try {
-            DB::transaction(function () use ($request, $user, $cabang) {
+            DB::transaction(function () use ($validated, $user, $cabang) {
                 // 1. Validasi stok untuk setiap item
-                foreach ($request->details as $item) {
+                foreach ($validated['details'] as $item) {
                     $stokCabang = $cabang->spareparts()->where('sparepart_id', $item['sparepart_id'])->first();
                     if (!$stokCabang || $stokCabang->pivot->stok < $item['qty']) {
                         $namaPart = $stokCabang->nama_part ?? 'Sparepart';
@@ -66,14 +66,14 @@ class PenjualanController extends Controller
                 }
 
                 $totalPenjualan = 0;
-                foreach ($request->details as $item) {
+                foreach ($validated['details'] as $item) {
                     $sparepart = $cabang->spareparts()->find($item['sparepart_id']);
                     $totalPenjualan += $item['qty'] * $sparepart->harga_jual;
                 }
 
                 // 2. Hitung PPN jika dicentang
                 $ppnNominal = 0;
-                $ppnDikenakan = $request->has('ppn_dikenakan');
+                $ppnDikenakan = $validated['ppn_dikenakan'] ?? false;
                 if ($ppnDikenakan) {
                     $ppnNominal = $totalPenjualan * 0.11;
                 }
@@ -82,10 +82,10 @@ class PenjualanController extends Controller
                 // 3. Simpan header penjualan
                 $penjualan = Penjualan::create([
                     'nomor_nota' => 'INV-' . $cabang->id . '-' . time(),
-                    'tanggal_penjualan' => $request->tanggal_penjualan,
+                    'tanggal_penjualan' => $validated['tanggal_penjualan'],
                     'user_id' => $user->id,
                     'cabang_id' => $cabang->id,
-                    'nama_pembeli' => $request->nama_pembeli ?? 'Customer Retail',
+                    'nama_pembeli' => $validated['nama_pembeli'] ?? 'Customer Retail',
                     'ppn_dikenakan' => $ppnDikenakan,
                     'total_penjualan' => $totalPenjualan,
                     'total_ppn_penjualan' => $ppnNominal,
@@ -93,7 +93,7 @@ class PenjualanController extends Controller
                 ]);
                 
                 // 4. Proses detail penjualan
-                foreach ($request->details as $item) {
+                foreach ($validated['details'] as $item) {
                     $sparepart = $cabang->spareparts()->find($item['sparepart_id']);
                     $qty = $item['qty'];
                     

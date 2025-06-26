@@ -9,7 +9,9 @@ use App\Http\Controllers\DistribusiController;
 use App\Http\Controllers\CabangController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LaporanController;
-use App\Http\Controllers\DashboardController; // Pastikan ini ditambahkan
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,10 +20,20 @@ use App\Http\Controllers\DashboardController; // Pastikan ini ditambahkan
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
-require __DIR__.'/auth.php';
+Route::middleware('guest')->group(function () {
+    // Hanya izinkan rute untuk login
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+});
+
+Route::middleware('auth')->group(function () {
+    // Rute untuk update password (di halaman profil) dan logout
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
 
 // Grup route untuk semua user yang sudah login
 Route::middleware('auth')->group(function () {
