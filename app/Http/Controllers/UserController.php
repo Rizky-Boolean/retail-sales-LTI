@@ -34,7 +34,7 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -43,11 +43,11 @@ class UserController extends Controller
         ]);
 
         User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'cabang_id' => $request->role === 'admin_cabang' ? $request->cabang_id : null,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+            'cabang_id' => $validated['role'] === 'admin_cabang' ? $validated['cabang_id'] : null,
         ]);
 
         return redirect()->route('users.index')->with('success', 'User baru berhasil dibuat.');
@@ -77,28 +77,35 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
-            'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', Rule::in(['admin_induk', 'admin_cabang'])],
+            'email' => ['required', 'string', 'email', 'max:255', \Illuminate\Validation\Rule::unique(User::class)->ignore($user->id)],
+            'password' => ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'role' => ['required', \Illuminate\Validation\Rule::in(['admin_induk', 'admin_cabang'])],
             'cabang_id' => ['nullable', 'required_if:role,admin_cabang', 'exists:cabangs,id'],
         ]);
 
         $dataToUpdate = [
             'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
-            'cabang_id' => $request->role === 'admin_cabang' ? $request->cabang_id : null,
+            // Jangan update role jika user mengedit dirinya sendiri
+            'role' => (auth()->id() === $user->id) ? $user->role : $request->role,
         ];
 
-        // Jika password diisi, hash dan tambahkan ke data update
+        // Jika role adalah admin induk, pastikan cabang_id null
+        if ($dataToUpdate['role'] === 'admin_induk') {
+            $dataToUpdate['cabang_id'] = null;
+        } else {
+            $dataToUpdate['cabang_id'] = $request->cabang_id;
+        }
+
         if ($request->filled('password')) {
-            $dataToUpdate['password'] = Hash::make($request->password);
+            $dataToUpdate['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
         }
 
         $user->update($dataToUpdate);
 
         return redirect()->route('users.index')->with('success', 'Data user berhasil diperbarui.');
     }
+
 
     /**
      * Remove the specified resource from storage.

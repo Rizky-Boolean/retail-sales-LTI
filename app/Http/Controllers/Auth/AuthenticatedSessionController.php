@@ -29,6 +29,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $user = $request->user();
+
+        if ($user->role === 'admin_cabang') {
+            // Jika admin cabang, arahkan ke halaman stok
+            return redirect()->intended(route('cabang.stok.index'));
+        }
+
+        // Untuk peran lainnya (admin induk), arahkan ke dashboard default
         return redirect()->intended(RouteServiceProvider::HOME);
     }
 
