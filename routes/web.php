@@ -12,6 +12,7 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,4 +86,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:admin_induk,admin_cabang'])->group(function () {
         Route::get('distribusi/{distribusi}', [DistribusiController::class, 'show'])->name('distribusi.show');
     });
+
+    Route::post('/email/verification-notification', function (Illuminate\Http\Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('status', 'verification-link-sent');
+    })->name('verification.send');
 });
