@@ -44,6 +44,7 @@ class StokMasukController extends Controller
             'details.*.sparepart_id' => 'required|exists:spareparts,id',
             'details.*.qty' => 'required|integer|min:1',
             'details.*.harga_beli_satuan' => 'required|numeric|min:0',
+            'catatan' => 'nullable|string',
         ]);
 
         try {

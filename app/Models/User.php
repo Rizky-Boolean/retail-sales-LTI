@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Traits\LogsActivity;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, LogsActivity;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',      // <-- TAMBAHKAN INI
+        'cabang_id', // <-- TAMBAHKAN INI
     ];
 
     /**
@@ -46,6 +47,6 @@ class User extends Authenticatable
 
     public function cabang()
     {
-    return $this->belongsTo(Cabang::class);
+        return $this->belongsTo(Cabang::class);
     }
 }

@@ -18,6 +18,10 @@ switch ($width) {
     case '48':
         $width = 'w-48';
         break;
+    // Anda bisa menambahkan case lain jika membutuhkan lebar dropdown yang berbeda
+    // case '64':
+    //     $width = 'w-64';
+    //     break;
 }
 @endphp
 
@@ -27,16 +31,16 @@ switch ($width) {
     </div>
 
     <div x-show="open"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100"
-            x-transition:leave="transition ease-in duration-75"
-            x-transition:leave-start="opacity-100 scale-100"
-            x-transition:leave-end="opacity-0 scale-95"
-            class="absolute z-50 mt-2 {{ $width }} rounded-md shadow-lg {{ $alignmentClasses }}"
-            style="display: none;"
-            @click="open = false">
-        <div class="rounded-md ring-1 ring-black ring-opacity-5 {{ $contentClasses }}">
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-75"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="absolute z-50 mt-2 {{ $width }} rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 {{ $alignmentClasses }}" {{-- Mengubah rounded-md menjadi rounded-lg, menambahkan border dan shadow yang lebih jelas --}}
+        style="display: none;"
+        @click="open = false">
+        <div class="rounded-lg ring-1 ring-black ring-opacity-5 {{ $contentClasses }}"> {{-- Mengubah rounded-md menjadi rounded-lg --}}
             {{ $content }}
         </div>
     </div>

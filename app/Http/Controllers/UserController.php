@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Cabang; // <-- Tambahkan ini
+use App\Models\Cabang;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash; // <-- Tambahkan ini
-use Illuminate\Validation\Rules; // <-- Tambahkan ini
-use Illuminate\Validation\Rule; // <-- Tambahkan ini
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -39,7 +39,8 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', Rule::in(['admin_induk', 'admin_cabang'])],
-            'cabang_id' => ['nullable', 'required_if:role,admin_cabang', 'exists:cabangs,id'],
+            // Pastikan cabang_id wajib ada jika role adalah admin_cabang
+            'cabang_id' => ['nullable', Rule::requiredIf($request->role === 'admin_cabang'), 'exists:cabangs,id'],
         ]);
 
         User::create([
@@ -47,6 +48,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            // Set cabang_id hanya jika role adalah admin_cabang, jika tidak maka null
             'cabang_id' => $validated['role'] === 'admin_cabang' ? $validated['cabang_id'] : null,
         ]);
 

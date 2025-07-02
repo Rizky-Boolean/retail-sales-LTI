@@ -7,57 +7,164 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6 md:p-8 border border-gray-200 dark:border-gray-700"> {{-- Shadow lebih dalam, padding lebih besar, border --}}
 
-                    <div class="mb-4">
-                        <a href="{{ route('users.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            + Tambah Pengguna
-                        </a>
-                    </div>
+                {{-- Tombol Tambah Pengguna --}}
+                <div class="mb-6 flex justify-end"> {{-- Margin bawah lebih besar --}}
+                    <a href="{{ route('users.create') }}" class="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        {{ __('Tambah Pengguna') }}
+                    </a>
+                </div>
 
-                    @include('partials.alert-messages')
+                {{-- Alert Pesan --}}
+                @include('partials.alert-messages')
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white dark:bg-gray-800">
-                            <thead class="bg-gray-200 dark:bg-gray-700">
-                                <tr>
-                                    <th class="py-3 px-4 text-left">Nama</th>
-                                    <th class="py-3 px-4 text-left">Email</th>
-                                    <th class="py-3 px-4 text-left">Role</th>
-                                    <th class="py-3 px-4 text-left">Cabang</th>
-                                    <th class="py-3 px-4 text-center">Aksi</th>
+                {{-- Tabel User --}}
+                <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700"> {{-- Wrapper untuk tabel agar ada scroll horizontal di mobile --}}
+                    <table id="usersTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"> {{-- Tambah ID untuk search --}}
+                        <thead class="bg-gray-200 dark:bg-gray-700">
+                            <tr>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Nama</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Email</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300r">Role</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Cabang</th>
+                                <th class="text-center py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
+                            @forelse($users as $user)
+                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150"> {{-- Hover effect pada baris --}}
+                                    <td class="py-3 px-4 whitespace-nowrap">{{ $user->name }}</td>
+                                    <td class="py-3 px-4 whitespace-nowrap">{{ $user->email }}</td>
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        <span class="capitalize px-2 py-1 text-xs font-bold rounded
+                                            {{ $user->role == 'admin_induk' ? 'bg-blue-200 text-blue-800 dark:bg-blue-800/30 dark:text-blue-300' : 'bg-green-200 text-green-800 dark:bg-green-800/30 dark:text-green-300' }}"> {{-- Styling role badge --}}
+                                            {{ str_replace('_', ' ', $user->role) }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 whitespace-nowrap">{{ $user->cabang->nama_cabang ?? 'N/A' }}</td>
+                                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                                        <a href="{{ route('users.edit', $user->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">
+                                            Edit
+                                        </a>
+                                        <button type="button" onclick="showDeleteModal({{ $user->id }})" class="text-red-500 hover:text-red-700 py-1 px-3 rounded">Hapus</button> {{-- Mengubah form menjadi button untuk memicu modal --}}
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($users as $user)
-                                    <tr class="border-b border-gray-200 dark:border-gray-700">
-                                        <td class="py-3 px-4">{{ $user->name }}</td>
-                                        <td class="py-3 px-4">{{ $user->email }}</td>
-                                        <td class="py-3 px-4">
-                                            <span class="capitalize px-2 py-1 text-xs font-bold rounded {{ $user->role == 'admin_induk' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800' }}">
-                                                {{ str_replace('_', ' ', $user->role) }}
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-4">{{ $user->cabang->nama_cabang ?? 'N/A' }}</td>
-                                        <td class="py-3 px-4 text-center">
-                                            <a href="{{ route('users.edit', $user) }}" class="text-yellow-500 hover:text-yellow-700 font-bold py-1 px-3 rounded">Edit</a>
-                                            <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block ml-2">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold py-1 px-3 rounded" onclick="return confirm('Apakah Anda yakin ingin menghapus user ini?')">Hapus</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="5" class="text-center py-4">Tidak ada data pengguna.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="mt-4">{{ $users->links() }}</div>
+                            @empty
+                                <tr id="initialEmptyRow"> {{-- Tambah ID --}}
+                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada data pengguna.
+                                    </td>
+                                </tr>
+                            @endforelse
+                            <tr id="noResultsRow" style="display: none;"> {{-- Tambah ID dan sembunyikan default --}}
+                                <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data pengguna yang cocok.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Pagination --}}
+                <div class="mt-6"> {{-- Margin atas lebih besar --}}
+                    {{ $users->links() }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Konfirmasi Hapus --}}
+    <div id="deleteModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto border border-gray-200 dark:border-gray-700">
+            <div class="text-center">
+                <svg class="mx-auto mb-4 h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <h3 class="mb-5 text-lg font-normal text-gray-800 dark:text-gray-300">Apakah Anda yakin ingin menghapus data ini?</h3>
+                <div class="flex justify-center space-x-4">
+                    <button type="button" onclick="hideDeleteModal()" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600 transition duration-150 ease-in-out">
+                        Batal
+                    </button>
+                    <form id="deleteForm" method="POST" action="" class="inline-block">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
+                            Hapus
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- Script untuk Search --}}
+    <script>
+        // Fungsi Search Tabel
+        function filterTable() {
+            let input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("usersTable"); // Mengubah ID tabel
+            tr = table.getElementsByTagName("tr");
+            let noResultsRow = document.getElementById("noResultsRow"); // Ambil baris "Tidak ada data yang cocok."
+            let initialEmptyRow = document.getElementById("initialEmptyRow"); // Ambil baris "Tidak ada data pengguna." (jika ada)
+            let foundDataRows = 0; // Menghitung berapa banyak baris data yang terlihat
+
+            // Loop melalui semua baris tabel, sembunyikan yang tidak cocok dengan kueri pencarian
+            for (i = 0; i < tr.length; i++) {
+                // Lewati baris header dan baris pesan kosong (jika ada)
+                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") {
+                    continue;
+                }
+                
+                // Cari di kolom Nama (indeks 0) dan Email (indeks 1)
+                let tdName = tr[i].getElementsByTagName("td")[0];
+                let tdEmail = tr[i].getElementsByTagName("td")[1];
+
+                let rowMatchesFilter = false;
+                if (tdName && (tdName.textContent || tdName.innerText).toUpperCase().indexOf(filter) > -1) {
+                    rowMatchesFilter = true;
+                }
+                if (!rowMatchesFilter && tdEmail && (tdEmail.textContent || tdEmail.innerText).toUpperCase().indexOf(filter) > -1) {
+                    rowMatchesFilter = true;
+                }
+
+                if (rowMatchesFilter) {
+                    tr[i].style.display = "";
+                    foundDataRows++; // Tambah hitungan jika baris cocok dan ditampilkan
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+
+            // Atur visibilitas pesan "Tidak ada data pengguna yang cocok."
+            if (noResultsRow) {
+                if (foundDataRows === 0 && filter !== "") { // Jika tidak ada baris data yang terlihat DAN filter tidak kosong
+                    noResultsRow.style.display = ""; // Tampilkan pesan "Tidak ada data yang cocok."
+                } else {
+                    noResultsRow.style.display = "none"; // Sembunyikan pesan ini
+                }
+            }
+
+            // Atur visibilitas pesan "Tidak ada data pengguna." (initialEmptyRow)
+            if (initialEmptyRow) {
+                if (foundDataRows === 0 && filter === "") { // Jika tidak ada baris data yang terlihat DAN filter kosong
+                    initialEmptyRow.style.display = ""; // Tampilkan pesan "Tidak ada data pengguna."
+                } else {
+                    initialEmptyRow.style.display = "none"; // Sembunyikan pesan ini
+                }
+            }
+        }
+
+        // Fungsi untuk menampilkan modal konfirmasi hapus
+        function showDeleteModal(id) {
+            const deleteForm = document.getElementById('deleteForm');
+            deleteForm.action = `/users/${id}`; // Sesuaikan dengan rute destroy Anda
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        // Fungsi untuk menyembunyikan modal konfirmasi hapus
+        function hideDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+    </script>
 </x-app-layout>

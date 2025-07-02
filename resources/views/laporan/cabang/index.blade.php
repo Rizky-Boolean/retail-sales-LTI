@@ -1,37 +1,51 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Pusat Laporan - Gudang Cabang') }}
+            Pusat Laporan - Gudang Cabang
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <h3 class="text-lg font-semibold mb-4">Silakan Pilih Laporan yang Ingin Dilihat</h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                <div class="p-6 md:p-8 text-gray-900 dark:text-gray-100">
+
+                    <h3 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
+                        Pilih Jenis Laporan
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         
-                        <!-- Kartu Laporan Keuntungan -->
-                        <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow">
-                            <h4 class="font-bold text-lg mb-2">Laporan Keuntungan Kotor</h4>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Melihat total keuntungan dari penjualan berdasarkan periode tanggal.</p>
-                            <a href="{{ route('laporan.cabang.keuntungan') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <!-- Kartu: Laporan Keuntungan Kotor -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl shadow-lg p-8 flex flex-col justify-between h-full">
+                            <div>
+                                <h4 class="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100">Laporan Keuntungan Kotor</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    Lihat total keuntungan penjualan berdasarkan periode yang Anda tentukan.
+                                </p>
+                            </div>
+                            <a href="{{ route('laporan.cabang.keuntungan') }}"
+                               class="mt-6 inline-flex items-center justify-center w-full px-6 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition duration-150 ease-in-out">
                                 Buka Laporan
                             </a>
                         </div>
 
-                        <!-- Kartu Laporan Cashflow (Diaktifkan) -->
-                        <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow">
-                            <h4 class="font-bold text-lg mb-2">Laporan Cashflow</h4>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Melihat total pemasukan dan pengeluaran cabang berdasarkan periode.</p>
-                            <a href="{{ route('laporan.cabang.cashflow') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <!-- Kartu: Laporan Cashflow -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl shadow-lg p-8 flex flex-col justify-between h-full">
+                            <div>
+                                <h4 class="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100">Laporan Cashflow</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    Lihat total pemasukan dan pengeluaran cabang dalam rentang waktu tertentu.
+                                </p>
+                            </div>
+                            <a href="{{ route('laporan.cabang.cashflow') }}"
+                               class="mt-6 inline-flex items-center justify-center w-full px-6 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition duration-150 ease-in-out">
                                 Buka Laporan
                             </a>
                         </div>
 
                     </div>
+
                 </div>
             </div>
         </div>

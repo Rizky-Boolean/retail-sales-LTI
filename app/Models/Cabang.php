@@ -10,10 +10,22 @@ class Cabang extends Model
 {
     use HasFactory, LogsActivity;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'nama_cabang',
+        'alamat',
+        'kontak',
+    ];
+
     public function spareparts()
     {
-    return $this->belongsToMany(Sparepart::class, 'cabang_sparepart')->withPivot('stok');
+        return $this->belongsToMany(Sparepart::class, 'cabang_sparepart')->withPivot('stok');
     }
+
     public function users()
     {
         return $this->hasMany(User::class);

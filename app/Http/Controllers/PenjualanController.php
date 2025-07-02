@@ -30,7 +30,6 @@ class PenjualanController extends Controller
     public function create()
     {
         $user = Auth::user();
-        // Ambil hanya sparepart yang punya stok di cabang user ini
         $spareparts = $user->cabang->spareparts()->where('stok', '>', 0)->get();
 
         return view('penjualan.create', compact('spareparts'));
@@ -53,7 +52,7 @@ class PenjualanController extends Controller
         $cabang = $user->cabang;
 
         try {
-            DB::transaction(function () use ($validated, $user, $cabang) {
+            DB::transaction(function () use ($validated, $user, $cabang, $request) {
                 // 1. Validasi stok untuk setiap item
                 foreach ($validated['details'] as $item) {
                     $stokCabang = $cabang->spareparts()->where('sparepart_id', $item['sparepart_id'])->first();
@@ -72,12 +71,10 @@ class PenjualanController extends Controller
                 }
 
                 // 2. Hitung PPN jika dicentang
-                $ppnNominal = 0;
-                $ppnDikenakan = $validated['ppn_dikenakan'] ?? false;
-                if ($ppnDikenakan) {
-                    $ppnNominal = $totalPenjualan * 0.11;
-                }
+                $ppnDikenakan = $request->has('ppn_dikenakan');
+                $ppnNominal = $ppnDikenakan ? ($totalPenjualan * 0.11) : 0;
                 $totalFinal = $totalPenjualan + $ppnNominal;
+
                 
                 // 3. Simpan header penjualan
                 $penjualan = Penjualan::create([
@@ -97,7 +94,6 @@ class PenjualanController extends Controller
                     $sparepart = $cabang->spareparts()->find($item['sparepart_id']);
                     $qty = $item['qty'];
                     
-                    // Ambil HPP (Harga Pokok Penjualan) dari harga kirim terakhir saat distribusi
                     $distribusiDetail = DistribusiDetail::where('sparepart_id', $sparepart->id)
                                                           ->latest('created_at')->first();
                     $hpp = $distribusiDetail->harga_kirim_satuan ?? 0;
