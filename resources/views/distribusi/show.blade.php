@@ -22,6 +22,15 @@
                     @endif
                 </div>
 
+                {{-- Tombol Ekspor PDF --}}
+                <div class="flex justify-end mb-4">
+                    <button onclick="generatePDF()" 
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                        Export ke PDF
+                    </button>
+
+                </div>
+                <div id="printArea">
                 {{-- Informasi Header Transaksi --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
                     <div>
@@ -86,4 +95,26 @@
             </div>
         </div>
     </div>
+</div>
+{{-- Script untuk Ekspor PDF --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+    async function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'pt', 'a4');
+        const source = document.getElementById('printArea');
+
+        await html2canvas(source, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const imgProps = doc.getImageProperties(imgData);
+            const pdfWidth = doc.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            doc.save("laporan-distribusi-{{ $distribusi->id }}.pdf");
+        });
+    }
+</script>
+
 </x-app-layout>
