@@ -9,7 +9,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    
+
                     <!-- Form -->
                     <form action="{{ route('suppliers.update', $supplier->id) }}" method="POST">
                         @csrf
@@ -32,7 +32,7 @@
                             <!-- Kontak -->
                             <div>
                                 <x-input-label for="kontak" :value="__('Kontak (No. Telepon/HP)')" />
-                                <x-text-input id="kontak" name="kontak" type="text" class="mt-1 block w-full" :value="old('kontak', $supplier->kontak)" />
+                                <x-text-input id="kontak" name="kontak" type="number" class="mt-1 block w-full" :value="old('kontak', $supplier->kontak)" />
                                 <x-input-error class="mt-2" :messages="$errors->get('kontak')" />
                             </div>
                         </div>
