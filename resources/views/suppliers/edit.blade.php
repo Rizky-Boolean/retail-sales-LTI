@@ -32,7 +32,9 @@
                             <!-- Kontak -->
                             <div>
                                 <x-input-label for="kontak" :value="__('Kontak (No. Telepon/HP)')" />
-                                <x-text-input id="kontak" name="kontak" type="number" class="mt-1 block w-full" :value="old('kontak', $supplier->kontak)" />
+                                {{-- [UBAH] Ganti type="text" menjadi type="tel" dan tambahkan placeholder --}}
+                                <x-text-input id="kontak" name="kontak" type="tel" class="mt-1 block w-full" 
+                                            :value="old('kontak', $supplier->kontak)" placeholder="+628123456789" />
                                 <x-input-error class="mt-2" :messages="$errors->get('kontak')" />
                             </div>
                         </div>

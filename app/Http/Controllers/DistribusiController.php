@@ -85,22 +85,24 @@ class DistribusiController extends Controller
                     'user_id' => auth()->id(),
                     'cabang_id_tujuan' => $validated['cabang_id_tujuan'],
                     'status' => 'dikirim',
-                    'total_harga_modal' => 0, 'total_ppn_distribusi' => 0, 'total_harga_kirim' => 0,
+                    'total_harga_modal' => 0,
+                    'total_ppn_distribusi' => 0, // PPN akan selalu 0
+                    'total_harga_kirim' => 0,
                 ]);
 
                 $totalHargaModal = 0;
-                $totalHargaKirim = 0;
 
-                // 3. Proses setiap item barang yang didistribusi
+                // Proses setiap item detail
                 foreach ($validated['details'] as $item) {
                     $sparepart = Sparepart::find($item['sparepart_id']);
                     $qty = $item['qty'];
                     $hargaModal = $sparepart->harga_modal_terakhir;
-                    $hargaKirim = $hargaModal * 1.11;
+                    $hargaKirim = $hargaModal;
 
                     $distribusi->details()->create([
                         'sparepart_id' => $sparepart->id, 'qty' => $qty,
-                        'harga_modal_satuan' => $hargaModal, 'harga_kirim_satuan' => $hargaKirim,
+                        'harga_modal_satuan' => $hargaModal,
+                        'harga_kirim_satuan' => $hargaKirim,
                     ]);
 
                     $sparepart->decrement('stok_induk', $qty);
@@ -115,16 +117,15 @@ class DistribusiController extends Controller
                     }
 
                     $totalHargaModal += $hargaModal * $qty;
-                    $totalHargaKirim += $hargaKirim * $qty;
                 }
 
                 $distribusi->update([
                     'total_harga_modal' => $totalHargaModal,
-                    'total_ppn_distribusi' => $totalHargaKirim - $totalHargaModal,
-                    'total_harga_kirim' => $totalHargaKirim,
+                    'total_ppn_distribusi' => 0, // Hardcode PPN menjadi 0
+                    'total_harga_kirim' => $totalHargaModal, // Total kirim = total modal
                 ]);
 
-                return $distribusi; // Pastikan return objek distribusi
+                return $distribusi;
             });
 
             // [START] Logika untuk Mengirim Notifikasi
@@ -138,7 +139,6 @@ class DistribusiController extends Controller
             // [END] Logika untuk Mengirim Notifikasi
 
             return redirect()->route('distribusi.index')->with('success', 'Data distribusi berhasil disimpan dan notifikasi telah dikirim!');
-
         } catch (ValidationException $e) {
             return redirect()->back()->withInput()->withErrors($e->errors());
         } catch (\Exception $e) {

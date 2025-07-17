@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Penjualan;
 use Carbon\Carbon;
 use App\Models\StokMasuk;
+use App\Models\Cabang;
 
 class LaporanController extends Controller
 {
@@ -117,6 +118,40 @@ class LaporanController extends Controller
             'totalPengeluaran',
             'tanggalAwal',
             'tanggalAkhir'
+        ));
+    }
+        public function laporanPenjualanSemuaCabang(Request $request)
+    {
+        // Tentukan rentang tanggal default (bulan ini)
+        $tanggalAwal = $request->input('tanggal_awal', Carbon::now()->startOfMonth()->toDateString());
+        $tanggalAkhir = $request->input('tanggal_akhir', Carbon::now()->endOfMonth()->toDateString());
+        $cabangId = $request->input('cabang_id');
+
+        // Ambil semua data cabang untuk filter dropdown
+        $cabangs = Cabang::orderBy('nama_cabang')->get();
+
+        // Query dasar untuk mengambil data penjualan
+        $penjualanQuery = Penjualan::with(['user', 'cabang'])
+            ->whereBetween('tanggal_penjualan', [$tanggalAwal, $tanggalAkhir]);
+
+        // Terapkan filter cabang jika dipilih
+        if ($cabangId) {
+            $penjualanQuery->where('cabang_id', $cabangId);
+        }
+
+        // Ambil hasil query
+        $penjualans = $penjualanQuery->latest()->get();
+
+        // Hitung total dari data yang sudah difilter
+        $totalPenjualan = $penjualans->sum('total_final');
+
+        return view('laporan.induk.penjualan', compact(
+            'penjualans',
+            'cabangs',
+            'totalPenjualan',
+            'tanggalAwal',
+            'tanggalAkhir',
+            'cabangId' // Kirim ID cabang yang dipilih untuk ditampilkan di filter
         ));
     }
 }

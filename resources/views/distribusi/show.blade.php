@@ -56,7 +56,7 @@
                                 <th class="py-3 px-4 text-left">Nama Part</th>
                                 <th class="py-3 px-4 text-center">Qty</th>
                                 <th class="py-3 px-4 text-right">Harga Modal</th>
-                                <th class="py-3 px-4 text-right">Harga Kirim (+PPN)</th>
+                                <th class="py-3 px-4 text-right">Harga Kirim</th>
                                 <th class="py-3 px-4 text-right">Subtotal Kirim</th>
                             </tr>
                         </thead>
@@ -77,13 +77,10 @@
                 {{-- Rangkuman Total --}}
                 <div class="flex justify-end">
                     <div class="w-full md:w-1/3">
+                        {{-- [HAPUS] Baris untuk PPN dihapus --}}
                         <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 py-2">
                             <span class="font-semibold">Total Harga Modal</span>
                             <span>{{ 'Rp ' . number_format($distribusi->total_harga_modal, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 py-2">
-                            <span class="font-semibold">Total PPN Distribusi (11%)</span>
-                            <span>{{ 'Rp ' . number_format($distribusi->total_ppn_distribusi, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between py-2 text-lg font-bold">
                             <span>Total Harga Kirim</span>

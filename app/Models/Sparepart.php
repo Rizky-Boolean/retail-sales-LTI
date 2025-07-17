@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sparepart extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

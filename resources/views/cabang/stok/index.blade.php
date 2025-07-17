@@ -24,6 +24,7 @@
                             <tr>
                                 <th class="py-3 px-4 text-left">Kode Part</th>
                                 <th class="py-3 px-4 text-left">Nama Part</th>
+                                <th class="py-3 px-4 text-left">Harga Jual</th>
                                 <th class="py-3 px-4 text-center">Jumlah Stok</th>
                             </tr>
                         </thead>
@@ -32,11 +33,12 @@
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
                                     <td class="py-3 px-4 whitespace-nowrap">{{ $sparepart->kode_part }}</td>
                                     <td class="py-3 px-4">{{ $sparepart->nama_part }}</td>
+                                    <td class="py-3 px-4">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
                                     <td class="py-3 px-4 text-center font-semibold">{{ $sparepart->pivot->stok }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                    <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
                                         Belum ada stok barang di gudang Anda.
                                     </td>
                                 </tr>

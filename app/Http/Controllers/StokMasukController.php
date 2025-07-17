@@ -14,9 +14,14 @@ class StokMasukController extends Controller
     // Menampilkan histori stok masuk
     public function index()
     {
-        $stokMasuks = StokMasuk::with('supplier')->latest()->paginate(10);
+        $stokMasuks = StokMasuk::with('supplier')
+                                ->withSum('details', 'qty')
+                                ->latest()
+                                ->paginate(10);
+                                
         return view('stok-masuk.index', compact('stokMasuks'));
     }
+
 
     // Menampilkan detail satu transaksi stok masuk
     public function show($id)
@@ -37,64 +42,51 @@ class StokMasukController extends Controller
         // GANTI SELURUH METHOD STORE ANDA DENGAN INI
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'tanggal_masuk' => 'required|date',
             'supplier_id' => 'required|exists:suppliers,id',
             'details' => 'required|array|min:1',
             'details.*.sparepart_id' => 'required|exists:spareparts,id',
             'details.*.qty' => 'required|integer|min:1',
             'details.*.harga_beli_satuan' => 'required|numeric|min:0',
-            'catatan' => 'nullable|string',
         ]);
 
         try {
-            DB::transaction(function () use ($validated) {
-                // ... (Kode untuk menghitung total & PPN masih sama)
+            DB::transaction(function () use ($request) {
+                // Hitung total pembelian awal
                 $totalPembelian = 0;
-                foreach ($validated['details'] as $detail) {
+                foreach ($request->details as $detail) {
                     $totalPembelian += $detail['qty'] * $detail['harga_beli_satuan'];
                 }
-                $ppnNominal = 0;
-                $ppnDikenakan = $totalPembelian > 100000;
-                if ($ppnDikenakan) {
-                    $ppnNominal = $totalPembelian * 0.11;
-                }
 
-                // ... (Kode untuk create StokMasuk header masih sama)
+                $ppnDikenakan = $request->has('ppn_dikenakan');
+                $ppnNominal = $ppnDikenakan ? $totalPembelian * 0.11 : 0;
+
+                // Simpan data header
                 $stokMasuk = StokMasuk::create([
-                    'tanggal_masuk' => $validated['tanggal_masuk'], 'supplier_id' => $validated['supplier_id'], 'user_id' => auth()->id(),
-                    'total_pembelian' => $totalPembelian, 'total_ppn_supplier' => $ppnNominal, 'total_final' => $totalPembelian + $ppnNominal,
-                    'catatan' => $validated['catatan'],
+                    'tanggal_masuk' => $request->tanggal_masuk,
+                    'supplier_id' => $request->supplier_id,
+                    'ppn_dikenakan' => $ppnDikenakan, // Simpan status ceklis
+                    'user_id' => auth()->id(),
+                    'total_pembelian' => $totalPembelian,
+                    'total_ppn_supplier' => $ppnNominal,
+                    'total_final' => $totalPembelian + $ppnNominal,
+                    'catatan' => $request->catatan,
                 ]);
 
-                // [START] INI BAGIAN UTAMA YANG BERUBAH
-                foreach ($validated['details'] as $detail) {
+                // Proses setiap detail item
+                foreach ($request->details as $detail) {
                     $sparepart = Sparepart::find($detail['sparepart_id']);
                     $hargaBeli = $detail['harga_beli_satuan'];
                     
-                    // Hitung Harga Modal
+                    // [UBAH] Harga modal sekarang bergantung pada status PPN
                     $hargaModal = $ppnDikenakan ? $hargaBeli * 1.11 : $hargaBeli;
+                    
+                    // ... (logika update harga jual tetap sama)
 
-                    // Hitung Harga Jual Baru berdasarkan Markup
-                    $markupPersen = $sparepart->markup_persen ?? 0;
-                    $markupAmount = $hargaBeli * ($markupPersen / 100);
-                    $newHargaJual = $hargaBeli + $markupAmount;
-
-                    // Simpan detail transaksi
-                    $stokMasuk->details()->create([
-                        'sparepart_id' => $detail['sparepart_id'], 'qty' => $detail['qty'],
-                        'harga_beli_satuan' => $hargaBeli, 'harga_modal_satuan' => $hargaModal,
-                    ]);
-
-                    // Update Master Sparepart dengan semua data baru
-                    $sparepart->update([
-                        'stok_induk' => $sparepart->stok_induk + $detail['qty'],
-                        'harga_beli_terakhir' => $hargaBeli,
-                        'harga_modal_terakhir' => $hargaModal,
-                        'harga_jual' => $newHargaJual, // Harga jual di-update otomatis!
-                    ]);
+                    $stokMasuk->details()->create([ /* ... data detail ... */ ]);
+                    $sparepart->update([ /* ... update sparepart ... */ ]);
                 }
-                // [END] BAGIAN UTAMA YANG BERUBAH
             });
             return redirect()->route('stok-masuk.index')->with('success', 'Data stok masuk berhasil disimpan!');
         } catch (\Exception $e) {

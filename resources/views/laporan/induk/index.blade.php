@@ -46,9 +46,14 @@
                             Buka Riwayat
                         </a>
                     </div>
-
+                    <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-lg mb-2">Laporan Penjualan Cabang</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Melihat rekapitulasi penjualan dari semua cabang.</p>
+                        <a href="{{ route('laporan.induk.penjualan') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Buka Laporan
+                        </a>
+                    </div>
                 </div>
-
             </div>
         </div>
     </div>

@@ -41,7 +41,7 @@ class PenjualanController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tanggal_penjualan' => 'required|date',
+            'tanggal_penjualan' => 'required|date|before_or_equal:today',
             'nama_pembeli' => 'nullable|string|max:255',
             'details' => 'required|array|min:1',
             'details.*.sparepart_id' => 'required|exists:spareparts,id',

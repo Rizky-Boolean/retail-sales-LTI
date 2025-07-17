@@ -7,78 +7,52 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6 md:p-8 border border-gray-200 dark:border-gray-700">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
 
-                {{-- Tombol Tambah --}}
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                    {{-- Search Input --}}
-                    <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari penjualan..."
-                            class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
-                    </div>
-
-                    {{-- Tombol Aksi --}}
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <a href="{{ route('penjualan.create') }}"
-                           class="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                    <div class="mb-4">
+                        <a href="{{ route('penjualan.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                             + Buat Transaksi Baru
                         </a>
                     </div>
-                </div>
 
-                {{-- Alert Message --}}
-                @include('partials.alert-messages')
+                    @include('partials.alert-messages')
 
-                {{-- Tabel Penjualan --}}
-                <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                    <table id="penjualanTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                        <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase font-bold"> {{-- Mengubah bg-gray-100 menjadi bg-gray-50 --}}
-                            <tr>
-                                <th class="py-3 px-4 text-left">No. Nota</th>
-                                <th class="py-3 px-4 text-left">Tanggal</th>
-                                <th class="py-3 px-4 text-left">Pembeli</th>
-                                <th class="py-3 px-4 text-right">Total</th>
-                                <th class="py-3 px-4 text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
-                            @forelse($penjualans as $penjualan)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 data-row"> {{-- Tambah class 'data-row' --}}
-                                    <td class="py-3 px-4 whitespace-nowrap">{{ $penjualan->nomor_nota }}</td>
-                                    <td class="py-3 px-4 whitespace-nowrap">{{ \Carbon\Carbon::parse($penjualan->tanggal_penjualan)->format('d M Y') }}</td>
-                                    <td class="py-3 px-4 whitespace-nowrap">{{ $penjualan->nama_pembeli }}</td>
-                                    <td class="py-3 px-4 text-right whitespace-nowrap">{{ 'Rp ' . number_format($penjualan->total_final, 0, ',', '.') }}</td>
-                                    <td class="py-3 px-4 text-center space-x-2 whitespace-nowrap">
-                                        <a href="{{ route('penjualan.show', $penjualan->id) }}"
-                                           class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition duration-150 ease-in-out">
-                                            Nota
-                                        </a>
-                                        <button type="button" onclick="showCancelModal({{ $penjualan->id }})"
-                                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition duration-150 ease-in-out">
-                                            Batal
-                                        </button>
-                                    </td>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white dark:bg-gray-800">
+                            <thead class="bg-gray-200 dark:bg-gray-700">
+                                <tr>
+                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">No. Nota</th>
+                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Tanggal</th>
+                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Pembeli</th>
+                                    <th class="text-right py-3 px-4 uppercase font-semibold text-sm">Total</th>
+                                    <th class="text-center py-3 px-4 uppercase font-semibold text-sm">Aksi</th>
                                 </tr>
-                            @empty
-                                <tr id="initialEmptyRow"> {{-- Tambah ID --}}
-                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                        Belum ada transaksi penjualan.
-                                    </td>
-                                </tr>
-                            @endforelse
-                            {{-- Baris jika hasil search tidak ditemukan --}}
-                            <tr id="noResultsRow" class="hidden"> {{-- Tambah ID dan sembunyikan default --}}
-                                <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                    Tidak ada transaksi yang cocok dengan pencarian.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody class="text-gray-700 dark:text-gray-200">
+                                @forelse($penjualans as $penjualan)
+                                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                                        <td class="text-left py-3 px-4">{{ $penjualan->nomor_nota }}</td>
+                                        <td class="text-left py-3 px-4">{{ \Carbon\Carbon::parse($penjualan->tanggal_penjualan)->format('d M Y') }}</td>
+                                        <td class="text-left py-3 px-4">{{ $penjualan->nama_pembeli }}</td>
+                                        <td class="text-right py-3 px-4">{{ 'Rp ' . number_format($penjualan->total_final, 0, ',', '.') }}</td>
+                                        <td class="text-center py-3 px-4">
+                                            {{-- [UBAH] Hanya sisakan tombol Nota --}}
+                                            <a href="{{ route('penjualan.show', $penjualan->id) }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">Nota</a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">Belum ada transaksi penjualan.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
 
-                {{-- Pagination --}}
-                <div class="mt-6">
-                    {{ $penjualans->links() }}
+                    <div class="mt-4">
+                        {{ $penjualans->links() }}
+                    </div>
                 </div>
             </div>
         </div>

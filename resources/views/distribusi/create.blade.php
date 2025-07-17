@@ -37,7 +37,9 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <x-input-label for="tanggal_distribusi" :value="__('Tanggal Distribusi')" />
-                            <x-text-input id="tanggal_distribusi" name="tanggal_distribusi" type="date" class="mt-1 block w-full" :value="old('tanggal_distribusi', date('Y-m-d'))" required />
+                            {{-- [MODIFIKASI] Tambahkan atribut max untuk validasi tanggal --}}
+                            <x-text-input id="tanggal_distribusi" name="tanggal_distribusi" type="date" class="mt-1 block w-full" 
+                                          :value="old('tanggal_distribusi', date('Y-m-d'))" max="{{ date('Y-m-d') }}" required />
                         </div>
                         <div>
                             <x-input-label for="cabang_id_tujuan" :value="__('Kirim ke Cabang')" />
@@ -60,8 +62,9 @@
                                     <th class="py-3 px-4 text-left w-1/3">Sparepart</th>
                                     <th class="py-3 px-4 text-left w-28">Stok Induk</th>
                                     <th class="py-3 px-4 text-left w-28">Qty Kirim</th>
-                                    <th class="py-3 px-4 text-left w-32">Harga Kirim</th>
-                                    <th class="py-3 px-4 text-left w-32">Subtotal</th>
+                                    <th class="py-3 px-4 text-right w-32">Harga Kirim</th>
+                                    <th class="py-3 px-4 text-right w-32">Subtotal</th>
+                                    <th class="py-3 px-4 w-12"></th> {{-- Kolom untuk tombol hapus --}}
                                 </tr>
                             </thead>
                             <tbody>
@@ -71,7 +74,12 @@
                                             <select :name="`details[${index}][sparepart_id]`" x-model="item.sparepart_id" @change="updateItemData(index)" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" required>
                                                 <option value="">-- Pilih Sparepart --</option>
                                                 <template x-for="sparepart in spareparts" :key="sparepart.id">
-                                                    <option :value="sparepart.id" x-text="sparepart.nama_part"></option>
+                                                    {{-- [MODIFIKASI] Tampilkan kode part sebelum nama sparepart --}}
+                                                    <option 
+                                                        :value="sparepart.id" 
+                                                        x-text="`${sparepart.kode_part} - ${sparepart.nama_part}`"
+                                                        :disabled="isSparepartSelected(sparepart.id) && item.sparepart_id != sparepart.id">
+                                                    </option>
                                                 </template>
                                             </select>
                                         </td>
@@ -81,18 +89,24 @@
                                         <td class="py-3 px-4">
                                             <input type="number" :name="`details[${index}][qty]`" x-model.number="item.qty" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" min="1" required>
                                         </td>
-                                        <td class="py-3 px-4">
-                                            <input type="text" :value="formatCurrency(item.harga_kirim)" class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded-md shadow-sm" readonly>
+                                        <td class="py-3 px-4 text-right">
+                                            <input type="text" :value="formatCurrency(item.harga_kirim)" class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-right" readonly>
                                         </td>
-                                        <td class="py-3 px-4">
-                                            <input type="text" :value="formatCurrency(item.qty * item.harga_kirim)" class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded-md shadow-sm" readonly>
+                                        <td class="py-3 px-4 text-right">
+                                            <input type="text" :value="formatCurrency(item.qty * item.harga_kirim)" class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-right" readonly>
+                                        </td>
+                                        {{-- [MODIFIKASI] Tambahkan tombol hapus --}}
+                                        <td class="py-3 px-4 text-center">
+                                            <button type="button" @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
                                         </td>
                                     </tr>
                                 </template>
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="5" class="py-3 px-4">
+                                    <td colspan="6" class="py-3 px-4">
                                         <button type="button" @click="addItem()" class="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                                             + Tambah Item
                                         </button>
@@ -118,7 +132,7 @@
         </div>
     </div>
 
-    {{-- Alpine.js Distribution Form --}}
+    {{-- [MODIFIKASI] Logika Alpine.js diperbarui --}}
     <script>
         function distributionForm(spareparts) {
             return {
@@ -128,18 +142,32 @@
                 addItem() {
                     this.items.push({ sparepart_id: '', qty: 1, stok_induk: 0, harga_kirim: 0 });
                 },
+                
+                removeItem(index) {
+                    // Hanya hapus jika ada lebih dari satu baris
+                    if (this.items.length > 1) {
+                        this.items.splice(index, 1);
+                    }
+                },
+                
                 updateItemData(index) {
                     const selectedId = this.items[index].sparepart_id;
                     const selectedSparepart = this.spareparts.find(s => s.id == selectedId);
 
                     if (selectedSparepart) {
                         this.items[index].stok_induk = selectedSparepart.stok_induk;
-                        this.items[index].harga_kirim = selectedSparepart.harga_modal_terakhir * 1.11;
+                        // [UBAH] Harga kirim sekarang sama dengan harga modal, tanpa dikali 1.11
+                        this.items[index].harga_kirim = selectedSparepart.harga_modal_terakhir;
                     } else {
                         this.items[index].stok_induk = 0;
                         this.items[index].harga_kirim = 0;
                     }
                 },
+
+                isSparepartSelected(sparepartId) {
+                    return this.items.some(item => item.sparepart_id == sparepartId);
+                },
+
                 formatCurrency(value) {
                     if (isNaN(value)) return 'Rp 0';
                     return new Intl.NumberFormat('id-ID', {

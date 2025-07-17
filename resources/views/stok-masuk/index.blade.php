@@ -39,6 +39,7 @@
                                 <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">#ID</th>
                                 <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Tanggal</th>
                                 <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Supplier</th>
+                                <th class="text-center py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Total Qty</th>
                                 <th class="py-3 px-4 text-right uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Total Final</th>
                                 <th class="py-3 px-4 text-center uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Aksi</th>
                             </tr>
@@ -49,14 +50,15 @@
                                     <td class="py-3 px-4">TR-{{ $stokMasuk->id }}</td>
                                     <td class="py-3 px-4">{{ \Carbon\Carbon::parse($stokMasuk->tanggal_masuk)->format('d M Y') }}</td>
                                     <td class="py-3 px-4">{{ $stokMasuk->supplier->nama_supplier ?? 'N/A' }}</td>
+                                    <td class="text-center py-3 px-4 font-bold">{{ $stokMasuk->details_sum_qty }}</td>
                                     <td class="py-3 px-4 text-right">{{ 'Rp ' . number_format($stokMasuk->total_final, 0, ',', '.') }}</td>
                                     <td class="py-3 px-4 text-center">
                                         <a href="{{ route('stok-masuk.show', $stokMasuk->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Detail</a>
                                     </td>
                                 </tr>
                             @empty
-                                <tr id="initialEmptyRow">
-                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">Belum ada data stok masuk.</td>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">Belum ada data stok masuk.</td>
                                 </tr>
                             @endforelse
                             <tr id="noResultsRow" style="display: none;">

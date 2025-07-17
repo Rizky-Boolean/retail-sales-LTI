@@ -94,6 +94,31 @@ class CabangController extends Controller
                            ->with('error', 'Terjadi kesalahan saat menghapus cabang.');
         }
     }
+        public function trash()
+    {
+        $cabangs = Cabang::onlyTrashed()->paginate(10);
+        return view('cabangs.trash', compact('cabangs'));
+    }
+
+    /**
+     * [BARU] Mengembalikan data cabang dari trash.
+     */
+    public function restore($id)
+    {
+        $cabang = Cabang::onlyTrashed()->findOrFail($id);
+        $cabang->restore();
+        return redirect()->route('cabangs.trash')->with('success', 'Data cabang berhasil dikembalikan.');
+    }
+
+    /**
+     * [BARU] Menghapus data cabang secara permanen.
+     */
+    public function forceDelete($id)
+    {
+        $cabang = Cabang::onlyTrashed()->findOrFail($id);
+        $cabang->forceDelete();
+        return redirect()->route('cabangs.trash')->with('success', 'Data cabang berhasil dihapus permanen.');
+    }
     public function stokIndex()
     {
         $user = Auth::user();

@@ -24,6 +24,11 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
                             Tambah Sparepart
+                        <a href="{{ route('spareparts.trash') }}" class="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out ml-2">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a2 2 0 012 2v2H7V5a2 2 0 012-2zm-2 6h8"></path>
+                            </svg>
+                            Lihat Data Terhapus
                         </a>
                     </div>
                 </div>
@@ -49,7 +54,7 @@
                                     <td class="py-3 px-4">{{ $sparepart->kode_part }}</td>
                                     <td class="py-3 px-4">{{ $sparepart->nama_part }}</td>
                                     <td class="py-3 px-4">{{ $sparepart->satuan }}</td>
-                                    <td class="py-3 px-4 text-right">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
+                                    <td class="py-3 px-4 text-left">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
                                     <td class="py-3 px-4 text-center">
                                         <div class="flex justify-center gap-2">
                                             <a href="{{ route('spareparts.edit', $sparepart->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Edit</a>

@@ -97,4 +97,38 @@ class SparepartController extends Controller
         $sparepart->delete();
         return redirect()->route('spareparts.index')->with('success', 'Data sparepart berhasil dihapus!');
     }
+
+    public function show(Sparepart $sparepart)
+    {
+        return redirect()->route('spareparts.edit', $sparepart);
+    }
+
+    /**
+     * [BARU] Menampilkan daftar sparepart yang sudah di-soft delete.
+     */
+    public function trash()
+    {
+        $spareparts = Sparepart::onlyTrashed()->paginate(10);
+        return view('spareparts.trash', compact('spareparts'));
+    }
+
+    /**
+     * [BARU] Mengembalikan data sparepart dari trash.
+     */
+    public function restore($id)
+    {
+        $sparepart = Sparepart::onlyTrashed()->findOrFail($id);
+        $sparepart->restore();
+        return redirect()->route('spareparts.trash')->with('success', 'Data sparepart berhasil dikembalikan.');
+    }
+
+    /**
+     * [BARU] Menghapus data sparepart secara permanen.
+     */
+    public function forceDelete($id)
+    {
+        $sparepart = Sparepart::onlyTrashed()->findOrFail($id);
+        $sparepart->forceDelete();
+        return redirect()->route('spareparts.trash')->with('success', 'Data sparepart berhasil dihapus permanen.');
+    }
 }

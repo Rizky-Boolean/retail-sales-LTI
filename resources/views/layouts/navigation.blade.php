@@ -64,31 +64,31 @@
 
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 {{-- Bagian Notifikasi --}}
+                @if(auth()->user()->role === 'admin_cabang')
                 <div class="ms-3 relative" x-data="{ open: false }">
-                    <button @click="open = !open" class="relative p-2 rounded-full text-blue-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 focus:ring-offset-blue-900 transition duration-150 ease-in-out"> {{-- Icon notifikasi menjadi lebih terang --}}
+                    <button @click="open = !open" class="relative p-2 rounded-full text-gray-400 hover:text-white focus:outline-none">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                        @php
-                            $unreadCount = 0; // Ganti dengan logika sebenarnya dari backend Anda
-                            $notifications = []; // Ganti dengan logika sebenarnya dari backend Anda
-                        @endphp
-                        @if($unreadCount > 0)
-                            <span class="absolute top-0 right-0 block h-2.5 w-2.5 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-500 ring-2 ring-blue-900"></span> {{-- Ring warna navbar --}}
+                        {{-- Tampilkan titik merah jika ada notifikasi belum dibaca --}}
+                        @if(isset($unreadCount) && $unreadCount > 0)
+                            <span class="absolute top-0 right-0 block h-2 w-2 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-500 ring-2 ring-white"></span>
                         @endif
                     </button>
-                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20 border border-gray-200 dark:border-gray-700" style="display: none;"> {{-- Dropdown tetap terang --}}
+                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20" style="display: none;">
                         <div class="py-2">
                             @forelse($notifications as $notification)
-                                <a href="{{-- Rute untuk menandai dibaca atau melihat detail notifikasi --}}" class="flex items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2">
-                                    <p class="text-gray-700 dark:text-gray-300 text-sm mx-2">
-                                        {{ $notification->data['message'] ?? 'Pesan notifikasi' }}
+                                {{-- Link sekarang mengarah ke route markAsRead --}}
+                                <a href="{{ route('notifications.markAsRead', $notification->id) }}" class="flex items-center px-4 py-3 border-b hover:bg-gray-100 dark:hover:bg-gray-700 -mx-2">
+                                    <p class="text-gray-600 dark:text-gray-200 text-sm mx-2">
+                                        {{ $notification->data['message'] }}
                                     </p>
                                 </a>
                             @empty
-                                <div class="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-sm">Tidak ada notifikasi baru.</div>
+                                <div class="px-4 py-3 text-center text-gray-500">Tidak ada notifikasi baru.</div>
                             @endforelse
                         </div>
                     </div>
                 </div>
+                @endif
 
                 <!-- Settings Dropdown (Profil Pengguna) -->
                 <x-dropdown align="right" width="48">

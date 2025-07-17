@@ -33,17 +33,16 @@ class SupplierController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi input dari form
         $validated = $request->validate([
             'nama_supplier' => 'required|string|max:255',
             'alamat' => 'nullable|string',
-            'kontak' => 'nullable|string|max:50',
+            'kontak' => ['nullable', 'string', 'regex:/^[\+]?[0-9\s\-]+$/', 'max:20'],
+        ], [
+            'kontak.regex' => 'Format kontak tidak valid. Hanya boleh berisi angka, spasi, tanda hubung (-), dan tanda tambah (+) di awal.'
         ]);
 
-        // Buat data baru di database
         Supplier::create($validated);
 
-        // Redirect kembali ke halaman index dengan pesan sukses
         return redirect()->route('suppliers.index')->with('success', 'Data supplier berhasil ditambahkan!');
     }
 
@@ -70,20 +69,19 @@ class SupplierController extends Controller
      */
     public function update(Request $request, Supplier $supplier)
     {
-        // Validasi input dari form edit
+        // [UBAH] Tambahkan aturan regex untuk validasi kontak
         $validated = $request->validate([
             'nama_supplier' => 'required|string|max:255',
             'alamat' => 'nullable|string',
-            'kontak' => 'nullable|string|max:50',
+            'kontak' => ['nullable', 'string', 'regex:/^[\+]?[0-9\s\-]+$/', 'max:20'],
+        ], [
+            'kontak.regex' => 'Format kontak tidak valid. Hanya boleh berisi angka, spasi, tanda hubung (-), dan tanda tambah (+) di awal.'
         ]);
 
-        // Update data supplier yang ada
         $supplier->update($validated);
 
-        // Redirect kembali ke halaman index dengan pesan sukses
         return redirect()->route('suppliers.index')->with('success', 'Data supplier berhasil diperbarui!');
     }
-
     /**
      * Menghapus data supplier dari database.
      */
@@ -103,5 +101,33 @@ class SupplierController extends Controller
             return redirect()->route('suppliers.index')
                            ->with('error', 'Terjadi kesalahan saat menghapus supplier.');
         }
+    }
+    /**
+     * [BARU] Menampilkan daftar supplier yang sudah di-soft delete.
+     */
+    public function trash()
+    {
+        $suppliers = Supplier::onlyTrashed()->paginate(10);
+        return view('suppliers.trash', compact('suppliers'));
+    }
+
+    /**
+     * [BARU] Mengembalikan data supplier dari trash.
+     */
+    public function restore($id)
+    {
+        $supplier = Supplier::onlyTrashed()->findOrFail($id);
+        $supplier->restore();
+        return redirect()->route('suppliers.trash')->with('success', 'Data supplier berhasil dikembalikan.');
+    }
+
+    /**
+     * [BARU] Menghapus data supplier secara permanen.
+     */
+    public function forceDelete($id)
+    {
+        $supplier = Supplier::onlyTrashed()->findOrFail($id);
+        $supplier->forceDelete();
+        return redirect()->route('suppliers.trash')->with('success', 'Data supplier berhasil dihapus permanen.');
     }
 }

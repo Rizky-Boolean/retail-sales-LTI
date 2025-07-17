@@ -34,25 +34,23 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        // Validasi tidak lagi memerlukan 'role', dan 'cabang_id' sekarang wajib
+        $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', Rule::in(['admin_induk', 'admin_cabang'])],
-            // Pastikan cabang_id wajib ada jika role adalah admin_cabang
-            'cabang_id' => ['nullable', Rule::requiredIf($request->role === 'admin_cabang'), 'exists:cabangs,id'],
+            'cabang_id' => ['required', 'exists:cabangs,id'],
         ]);
 
         User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
-            // Set cabang_id hanya jika role adalah admin_cabang, jika tidak maka null
-            'cabang_id' => $validated['role'] === 'admin_cabang' ? $validated['cabang_id'] : null,
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'admin_cabang', // Role di-hardcode menjadi 'admin_cabang'
+            'cabang_id' => $request->cabang_id,
         ]);
 
-        return redirect()->route('users.index')->with('success', 'User baru berhasil dibuat.');
+        return redirect()->route('users.index')->with('success', 'User Admin Cabang baru berhasil dibuat.');
     }
 
     /**
@@ -73,42 +71,37 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Memperbarui data user tanpa mengubah role.
      */
     public function update(Request $request, User $user)
     {
+        // Validasi tidak lagi menyertakan 'role'
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', \Illuminate\Validation\Rule::unique(User::class)->ignore($user->id)],
-            'password' => ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-            'role' => ['required', \Illuminate\Validation\Rule::in(['admin_induk', 'admin_cabang'])],
-            'cabang_id' => ['nullable', 'required_if:role,admin_cabang', 'exists:cabangs,id'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
+            'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
+            // Hanya validasi cabang jika user yang diedit adalah admin cabang
+            'cabang_id' => $user->role === 'admin_cabang' ? ['required', 'exists:cabangs,id'] : ['nullable'],
         ]);
 
         $dataToUpdate = [
             'name' => $request->name,
             'email' => $request->email,
-            // Jangan update role jika user mengedit dirinya sendiri
-            'role' => (auth()->id() === $user->id) ? $user->role : $request->role,
         ];
 
-        // Jika role adalah admin induk, pastikan cabang_id null
-        if ($dataToUpdate['role'] === 'admin_induk') {
-            $dataToUpdate['cabang_id'] = null;
-        } else {
+        // Hanya perbarui cabang jika rolenya adalah admin_cabang
+        if ($user->role === 'admin_cabang') {
             $dataToUpdate['cabang_id'] = $request->cabang_id;
         }
 
         if ($request->filled('password')) {
-            $dataToUpdate['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+            $dataToUpdate['password'] = Hash::make($request->password);
         }
 
         $user->update($dataToUpdate);
 
         return redirect()->route('users.index')->with('success', 'Data user berhasil diperbarui.');
     }
-
-
     /**
      * Remove the specified resource from storage.
      */
@@ -121,5 +114,27 @@ class UserController extends Controller
 
         $user->delete();
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+    }
+        public function trash()
+    {
+        $users = User::onlyTrashed()->paginate(10);
+        return view('users.trash', compact('users'));
+    }
+
+    public function restore($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->restore();
+        return redirect()->route('users.trash')->with('success', 'Data user berhasil dikembalikan.');
+    }
+
+    /**
+     * [BARU] Menghapus data user secara permanen.
+     */
+    public function forceDelete($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->forceDelete();
+        return redirect()->route('users.trash')->with('success', 'Data user berhasil dihapus permanen.');
     }
 }

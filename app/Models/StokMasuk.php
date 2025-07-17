@@ -18,6 +18,7 @@ class StokMasuk extends Model
     protected $fillable = [
         'tanggal_masuk',
         'supplier_id',
+        'ppn_dikenakan', // <-- Tambahkan ini
         'user_id',
         'total_pembelian',
         'total_ppn_supplier',
@@ -34,7 +35,8 @@ class StokMasuk extends Model
     // Relasi ke User
     public function user()
     {
-        return $this->belongsTo(User::class);
+        // Juga sertakan user yang sudah di-soft delete saat mencari relasi
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     // Relasi ke Detail

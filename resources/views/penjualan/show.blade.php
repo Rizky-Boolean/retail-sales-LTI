@@ -3,24 +3,10 @@
     @push('styles')
     <style>
         @media print {
-            body * {
-                visibility: hidden;
-            }
-
-            #nota-area, #nota-area * {
-                visibility: visible;
-            }
-
-            #nota-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-
-            .no-print {
-                display: none !important;
-            }
+            body * { visibility: hidden; }
+            #nota-area, #nota-area * { visibility: visible; }
+            #nota-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none; }
         }
     </style>
     @endpush
@@ -104,7 +90,6 @@
                                 </div>
                             </div>
                         </div>
-
                         {{-- Footer Terima Kasih --}}
                         <div class="mt-8 text-center text-xs text-gray-500 dark:text-gray-400 italic">
                             <p>Terima kasih atas pembelian Anda.</p>
@@ -121,6 +106,13 @@
                             class="inline-flex items-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition duration-150 ease-in-out">
                             Cetak Nota
                         </button>
+                            <form action="{{ route('penjualan.destroy', $penjualan->id) }}" method="POST" class="inline-block ml-2">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded" onclick="return confirm('Apakah Anda yakin ingin membatalkan transaksi ini? Stok akan dikembalikan.')">
+                                Batalkan Transaksi
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
