@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Sparepart;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+
 
 class SparepartController extends Controller
 {
@@ -37,13 +39,15 @@ class SparepartController extends Controller
             'kode_part' => 'required|unique:spareparts,kode_part|max:255',
             'nama_part' => 'required|max:255',
             'satuan' => 'required|max:50',
-            'markup_persen' => 'required|numeric|min:0', // Validasi markup
         ]);
 
-        // 2. Simpan data baru. Harga jual defaultnya 0 karena belum ada harga beli.
+        // 2. Hitung harga jual berdasarkan markup default
+        $markupPersen = 40; // Markup default 40%
+
+        // 3. Simpan data baru. Harga jual defaultnya 0 karena belum ada harga beli.
         Sparepart::create($validated);
 
-        // 3. Redirect ke halaman index dengan pesan sukses
+        // 4. Redirect ke halaman index dengan pesan sukses
         return redirect()->route('spareparts.index')->with('success', 'Data sparepart berhasil ditambahkan!');
     }
 

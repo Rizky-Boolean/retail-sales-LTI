@@ -8,18 +8,20 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\Distribusi;
 
-class NewDistributionNotification extends Notification
+class ShipmentRejectedNotification extends Notification
 {
     use Queueable;
 
     protected $distribusi;
+    protected $rejectorName;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(Distribusi $distribusi)
+    public function __construct(Distribusi $distribusi, string $rejectorName)
     {
         $this->distribusi = $distribusi;
+        $this->rejectorName = $rejectorName;
     }
 
     /**
@@ -37,9 +39,9 @@ class NewDistributionNotification extends Notification
     {
         return [
             'distribusi_id' => $this->distribusi->id,
-            'sender_name' => $this->distribusi->user->name,
-            'message' => "Kiriman baru #DIST-{$this->distribusi->id} telah dibuat oleh {$this->distribusi->user->name}.",
-            'url' => route('cabang.penerimaan.index'), // URL tujuan saat notifikasi diklik
+            'rejector_name' => $this->rejectorName,
+            'message' => "Kiriman #DIST-{$this->distribusi->id} DITOLAK oleh {$this->rejectorName}.",
+            'url' => route('distribusi.show', $this->distribusi->id), // URL tujuan
         ];
     }
 }

@@ -22,7 +22,9 @@ class StokMasukDetail extends Model
         'harga_modal_satuan',
     ];
 
-    // Relasi ke Sparepart
+    /**
+     * Mendefinisikan relasi ke Sparepart.
+     */
     public function sparepart()
     {
         return $this->belongsTo(Sparepart::class);

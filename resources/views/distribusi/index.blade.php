@@ -52,10 +52,18 @@
                                     <td class="py-3 px-4">{{ $distribusi->cabangTujuan->nama_cabang ?? '-' }}</td>
                                     <td class="py-3 px-4 text-right">{{ 'Rp ' . number_format($distribusi->total_harga_kirim, 0, ',', '.') }}</td>
                                     <td class="py-3 px-4 text-center">
-                                        <span class="inline-block px-3 py-1 text-xs font-medium rounded-full 
-                                            {{ $distribusi->status == 'dikirim' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-200' : 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-200' }}">
+                                        @php
+                                            $statusClass = '';
+                                            if ($distribusi->status == 'dikirim') $statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-200';
+                                            elseif ($distribusi->status == 'diterima') $statusClass = 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-200';
+                                            elseif ($distribusi->status == 'ditolak') $statusClass = 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-200';
+                                        @endphp
+                                        <span class="inline-block px-3 py-1 text-xs font-medium rounded-full {{ $statusClass }}">
                                             {{ ucfirst($distribusi->status) }}
                                         </span>
+                                        @if($distribusi->status == 'ditolak')
+                                            <p class="text-xs text-gray-500 mt-1 italic">"{{ $distribusi->alasan_penolakan }}"</p>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4 text-center">
                                         <a href="{{ route('distribusi.show', $distribusi->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded transition">Detail</a>

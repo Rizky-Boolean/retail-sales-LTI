@@ -10,8 +10,8 @@ use App\Models\Supplier;
 use App\Models\Cabang;
 use App\Models\Distribusi;
 use App\Models\Penjualan;
-use Illuminate\Support\Facades\DB;
 use App\Models\StokMasuk;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -23,19 +23,21 @@ class DashboardController extends Controller
         $user = Auth::user();
         $viewData = [];
 
-        if ($user->role === 'admin_induk') {
-            $viewData = $this->getDataForAdminInduk();
-        } elseif ($user->role === 'admin_cabang') {
-            $viewData = $this->getDataForAdminCabang($user);
+        if ($user->role === 'super_admin') {
+            $viewData = $this->getDataForSuperAdmin();
+        } elseif ($user->role === 'admin_gudang_induk') {
+            $viewData = $this->getDataForAdminGudangInduk();
+        } elseif ($user->role === 'admin_gudang_cabang') {
+            $viewData = $this->getDataForAdminGudangCabang($user);
         }
 
         return view('dashboard', $viewData);
     }
 
     /**
-     * Mengambil data untuk dashboard Admin Gudang Induk.
+     * Mengambil data untuk dashboard Super Admin.
      */
-    private function getDataForAdminInduk()
+    private function getDataForSuperAdmin()
     {
         // --- Statistik Kartu ---
         $totalStokInduk = Sparepart::sum('stok_induk');
@@ -63,8 +65,7 @@ class DashboardController extends Controller
             ->orderByRaw("MIN(tanggal_penjualan)")
             ->get();
 
-        // [FIX] 3. Grafik Distribusi Stok per Cabang
-        // Menggunakan subquery untuk menjumlahkan stok dari tabel pivot dengan benar.
+        // 3. Grafik Distribusi Stok per Cabang
         $distribusiStokData = Cabang::query()
             ->select('nama_cabang')
             ->addSelect(['total_stok' => 
@@ -79,18 +80,33 @@ class DashboardController extends Controller
             'totalSupplier' => Supplier::count(),
             'totalCabang' => Cabang::count(),
             'totalStokSeluruhGudang' => $totalStokInduk + $totalStokCabang,
-            'stokHampirHabis' => Sparepart::where('stok_induk', '<', 10)->orderBy('stok_induk', 'asc')->take(5)->get(),
+            // [UBAH] Logika untuk stok hampir habis diperbaiki
+            'stokHampirHabis' => Sparepart::where('stok_induk', '>', 0)
+                                          ->where('stok_induk', '<', 10)
+                                          ->orderBy('stok_induk', 'asc')
+                                          ->take(5)
+                                          ->get(),
             'distribusiTerbaru' => Distribusi::with('cabangTujuan')->latest()->take(5)->get(),
             'chartPengeluaran' => $pengeluaranData,
             'chartKeuntungan' => $keuntunganData,
             'chartDistribusiStok' => $distribusiStokData,
         ];
     }
+    
+    /**
+     * Mengambil data untuk dashboard Admin Gudang Induk.
+     */
+    private function getDataForAdminGudangInduk()
+    {
+        return [
+            'distribusiTerbaru' => Distribusi::with('cabangTujuan')->latest()->take(10)->get(),
+        ];
+    }
 
     /**
      * Mengambil data untuk dashboard Admin Gudang Cabang.
      */
-    private function getDataForAdminCabang($user)
+    private function getDataForAdminGudangCabang($user)
     {
         $cabangId = $user->cabang_id;
 
@@ -107,18 +123,32 @@ class DashboardController extends Controller
                                       ->get();
         
         $keuntunganBulanIni = $penjualanBulanIni->reduce(function ($carry, $penjualan) {
-            $labaPerNota = $penjualan->details->sum(function ($detail) {
-                return ($detail->harga_jual_satuan - $detail->hpp_satuan) * $detail->qty;
-            });
+            $labaPerNota = $penjualan->details->sum(function ($detail) { return ($detail->harga_jual_satuan - $detail->hpp_satuan) * $detail->qty; });
             return $carry + $labaPerNota;
         }, 0);
+
+        // [UBAH] Logika untuk stok hampir habis di cabang juga diperbaiki
+        $stokHampirHabisCabang = DB::table('cabang_sparepart')
+            ->join('spareparts', 'cabang_sparepart.sparepart_id', '=', 'spareparts.id')
+            ->select('spareparts.nama_part', 'cabang_sparepart.stok')
+            ->where('cabang_sparepart.cabang_id', $cabangId)
+            ->where('cabang_sparepart.stok', '>', 0)
+            ->where('cabang_sparepart.stok', '<', 10)
+            ->orderBy('cabang_sparepart.stok', 'asc')
+            ->take(5)
+            ->get();
+
+        $penjualan7Hari = Penjualan::select(DB::raw("DATE(tanggal_penjualan) as tanggal"), DB::raw("SUM(total_final) as total"))->where('cabang_id', $cabangId)->where('tanggal_penjualan', '>=', Carbon::now()->subDays(6))->groupBy('tanggal')->orderBy('tanggal', 'asc')->get();
+        $sparepartTerlaris = DB::table('penjualan_details')->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')->join('spareparts', 'penjualan_details.sparepart_id', '=', 'spareparts.id')->select('spareparts.nama_part', DB::raw('SUM(penjualan_details.qty) as total_terjual'))->where('penjualans.cabang_id', $cabangId)->whereMonth('penjualans.tanggal_penjualan', Carbon::now()->month)->whereYear('penjualans.tanggal_penjualan', Carbon::now()->year)->groupBy('spareparts.nama_part')->orderBy('total_terjual', 'desc')->take(5)->get();
 
         return [
             'penjualanHariIni' => $penjualanHariIni,
             'keuntunganBulanIni' => $keuntunganBulanIni,
             'kirimanMenunggu' => Distribusi::where('cabang_id_tujuan', $cabangId)->where('status', 'dikirim')->count(),
-            'stokHampirHabis' => $user->cabang->spareparts()->where('stok', '<', 10)->orderBy('stok', 'asc')->take(5)->get(),
+            'stokHampirHabis' => $stokHampirHabisCabang,
             'penjualanTerbaru' => Penjualan::where('cabang_id', $cabangId)->latest()->take(5)->get(),
+            'chartPenjualan7Hari' => $penjualan7Hari,
+            'sparepartTerlaris' => $sparepartTerlaris,
         ];
     }
 }

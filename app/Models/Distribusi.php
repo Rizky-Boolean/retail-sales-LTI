@@ -12,7 +12,7 @@ class Distribusi extends Model
 
     protected $fillable = [
     'tanggal_distribusi', 'user_id', 'cabang_id_tujuan', 'total_harga_modal',
-    'total_ppn_distribusi', 'total_harga_kirim', 'status'
+    'total_ppn_distribusi', 'total_harga_kirim', 'status','alasan_penolakan',
     ];
     public function cabangTujuan() { return $this->belongsTo(Cabang::class, 'cabang_id_tujuan'); }
     public function user()

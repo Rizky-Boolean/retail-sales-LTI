@@ -107,15 +107,6 @@ class DistribusiController extends Controller
 
                     $sparepart->decrement('stok_induk', $qty);
 
-                    $cabang = Cabang::find($validated['cabang_id_tujuan']);
-                    $stokCabang = $cabang->spareparts()->where('sparepart_id', $sparepart->id)->first();
-
-                    if ($stokCabang) {
-                        $cabang->spareparts()->updateExistingPivot($sparepart->id, ['stok' => $stokCabang->pivot->stok + $qty]);
-                    } else {
-                        $cabang->spareparts()->attach($sparepart->id, ['stok' => $qty]);
-                    }
-
                     $totalHargaModal += $hargaModal * $qty;
                 }
 
@@ -129,7 +120,7 @@ class DistribusiController extends Controller
             });
 
             // [START] Logika untuk Mengirim Notifikasi
-            $targetUsers = User::where('role', 'admin_cabang')
+            $targetUsers = User::where('role', 'admin_gudang_cabang')
                                ->where('cabang_id', $distribusi->cabang_id_tujuan)
                                ->get();
 
@@ -144,5 +135,12 @@ class DistribusiController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
+    }
+    public function stokInduk()
+    {
+        // Ambil semua data sparepart, urutkan berdasarkan nama, dan paginasi
+        $spareparts = Sparepart::orderBy('nama_part')->paginate(20);
+
+        return view('distribusi.stok-induk', compact('spareparts'));
     }
 }

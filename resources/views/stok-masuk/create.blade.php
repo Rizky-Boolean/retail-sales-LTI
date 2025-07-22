@@ -64,10 +64,11 @@
                                     <template x-for="(detail, index) in details" :key="index">
                                         <tr class="border-b border-gray-200 dark:border-gray-700">
                                             <td class="px-4 py-2">
-                                                <select :name="`details[${index}][sparepart_id]`" x-model="detail.sparepart_id" @change="updateItemData(index)"
+                                                <select :name="`details[${index}][sparepart_id]`" x-model="detail.sparepart_id"
                                                     class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                                     required>
                                                     <option value="">-- Pilih Sparepart --</option>
+                                                    {{-- [MODIFIKASI] Logika dropdown diperbarui --}}
                                                     <template x-for="sparepart in spareparts" :key="sparepart.id">
                                                         <option 
                                                             :value="sparepart.id" 
@@ -105,8 +106,16 @@
                                 </tbody>
                                 <tfoot class="font-semibold">
                                     <tr>
+                                        <td colspan="5" class="py-3 px-4"> {{-- [UBAH] Colspan menjadi 5 --}}
+                                            <button type="button" @click="addDetail()"
+                                                class="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow">
+                                                + Tambah Item
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
                                         <td colspan="3" class="text-right font-bold py-2 px-4">Total Pembelian</td>
-                                        <td class="py-2 px-4 font-medium text-right" colspan="2">
+                                        <td class="py-2 px-4 font-medium text-right" colspan="2"> {{-- [UBAH] Colspan menjadi 2 --}}
                                             <span x-text="formatCurrency(totalPembelian)"></span>
                                         </td>
                                     </tr>
@@ -118,13 +127,13 @@
                                                 <span class="ml-2">Kenakan PPN 11%</span>
                                             </label>
                                         </td>
-                                        <td class="py-2 px-4 text-right" colspan="2">
+                                        <td class="py-2 px-4 text-right" colspan="2"> {{-- [UBAH] Colspan menjadi 2 --}}
                                             <span x-text="formatCurrency(ppn)"></span>
                                         </td>
                                     </tr>
                                     <tr class="border-t-2 border-gray-300 dark:border-gray-600">
                                         <td colspan="3" class="text-right text-lg font-bold py-2 px-4">Total Final</td>
-                                        <td class="py-2 px-4 text-lg font-bold text-right" colspan="2">
+                                        <td class="py-2 px-4 text-lg font-bold text-right" colspan="2"> {{-- [UBAH] Colspan menjadi 2 --}}
                                             <span x-text="formatCurrency(totalFinal)"></span>
                                         </td>
                                     </tr>
@@ -157,7 +166,7 @@
         </div>
     </div>
 
-    {{-- Alpine.js --}}
+    {{-- [MODIFIKASI] Logika Alpine.js diperbarui --}}
     <script>
         function itemDetails(spareparts, initialDetails) {
             return {

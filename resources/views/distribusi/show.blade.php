@@ -28,7 +28,6 @@
                         class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
                         Export ke PDF
                     </button>
-
                 </div>
                 <div id="printArea">
                 {{-- Informasi Header Transaksi --}}
@@ -77,7 +76,6 @@
                 {{-- Rangkuman Total --}}
                 <div class="flex justify-end">
                     <div class="w-full md:w-1/3">
-                        {{-- [HAPUS] Baris untuk PPN dihapus --}}
                         <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 py-2">
                             <span class="font-semibold">Total Harga Modal</span>
                             <span>{{ 'Rp ' . number_format($distribusi->total_harga_modal, 0, ',', '.') }}</span>
