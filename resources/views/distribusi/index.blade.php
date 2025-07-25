@@ -19,9 +19,10 @@
 
                     {{-- Tombol Tambah --}}
                     <div class="flex justify-end">
-                        <a href="{{ route('distribusi.create') }}" class="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        <a href="{{ route('distribusi.create') }}" class="inline-flex items-center px-5 py-2.5 text-base font-semibold rounded-lg shadow-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-150 ease-in-out">
+                            <svg class="w-5 h-5 mr-2 -ml-1" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
                             </svg>
                             Buat Distribusi Baru
                         </a>
@@ -36,12 +37,12 @@
                     <table id="distribusiTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-200 dark:bg-gray-700">
                             <tr>
-                                <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">#ID</th>
-                                <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Tanggal</th>
-                                <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Cabang Tujuan</th>
-                                <th class="py-3 px-4 text-right uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Total Kirim</th>
-                                <th class="py-3 px-4 text-center uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Status</th>
-                                <th class="py-3 px-4 text-center uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Aksi</th>
+                                <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">#ID</th>
+                                <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Tanggal</th>
+                                <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Cabang Tujuan</th>
+                                <th class="py-3 px-4 text-right uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Total Kirim</th>
+                                <th class="py-3 px-4 text-center uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Status</th>
+                                <th class="py-3 px-4 text-center uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
@@ -51,6 +52,8 @@
                                     <td class="py-3 px-4">{{ \Carbon\Carbon::parse($distribusi->tanggal_distribusi)->format('d M Y') }}</td>
                                     <td class="py-3 px-4">{{ $distribusi->cabangTujuan->nama_cabang ?? '-' }}</td>
                                     <td class="py-3 px-4 text-right">{{ 'Rp ' . number_format($distribusi->total_harga_kirim, 0, ',', '.') }}</td>
+                                    
+                                    {{-- [DIKEMBALIKAN] Kolom Status dengan Teks Alasan yang Diperbesar --}}
                                     <td class="py-3 px-4 text-center">
                                         @php
                                             $statusClass = '';
@@ -58,13 +61,17 @@
                                             elseif ($distribusi->status == 'diterima') $statusClass = 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-200';
                                             elseif ($distribusi->status == 'ditolak') $statusClass = 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-200';
                                         @endphp
+                                        
                                         <span class="inline-block px-3 py-1 text-xs font-medium rounded-full {{ $statusClass }}">
                                             {{ ucfirst($distribusi->status) }}
                                         </span>
-                                        @if($distribusi->status == 'ditolak')
-                                            <p class="text-xs text-gray-500 mt-1 italic">"{{ $distribusi->alasan_penolakan }}"</p>
+
+                                        @if($distribusi->status == 'ditolak' && !empty($distribusi->alasan_penolakan))
+                                            {{-- [DIUBAH] Ukuran font diperbesar dan gaya italic dihilangkan --}}
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">"{{ $distribusi->alasan_penolakan }}"</p>
                                         @endif
                                     </td>
+
                                     <td class="py-3 px-4 text-center">
                                         <a href="{{ route('distribusi.show', $distribusi->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded transition">Detail</a>
                                     </td>

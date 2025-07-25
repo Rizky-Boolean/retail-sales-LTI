@@ -116,15 +116,13 @@
                         </table>
                     </div>
 
-                    {{-- Action Buttons --}}
-                    <div class="flex items-center justify-end mt-6">
-                        <a href="{{ route('distribusi.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mr-4">
-                            Batal
-                        </a>
-                        <button type="submit" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
-                            Kirim Barang
-                        </button>
-                    </div>
+                         <<div class="flex items-center justify-end mt-4">
+                            <a href="{{ route('distribusi.index') }}" class="inline-flex items-center justify-center px-6 py-2 border border-transparent font-medium text-red-600 dark:text-red-500 hover:underline inline-block mx-1">Batal</a>
+                            <button type="submit"
+                                class="inline-flex items-center justify-center px-6 py-2 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                                {{ __('Simpan') }}
+                            </button>
+                        </div>
 
                 </form>
 

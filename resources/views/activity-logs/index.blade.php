@@ -19,10 +19,10 @@
                     <table id="logTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                         <thead class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                             <tr>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Waktu</th>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300"">Pengguna</th>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300"">Deskripsi Aktivitas</th>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300"">Alamat IP</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Waktu</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider"">Pengguna</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider"">Deskripsi Aktivitas</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider"">Alamat IP</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">

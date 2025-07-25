@@ -11,6 +11,9 @@
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        
+        <!-- Icon -->
+        <script src="https://unpkg.com/lucide@latest"> </script>
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -19,6 +22,10 @@
         @stack('styles')
         {{-- [END] Styles khusus halaman --}}
     </head>
+    <script>
+         lucide.createIcons();
+    </script>
+
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
             @include('layouts.navigation')
@@ -43,5 +50,11 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    </body>
+         @stack('scripts')
+
+         <script src="https://unpkg.com/lucide@latest"></script>
+         <script>
+         lucide.createIcons();
+         </script>
+         </body>
 </html>

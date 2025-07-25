@@ -36,12 +36,12 @@
                     <table id="stokMasukTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-200 dark:bg-gray-700">
                             <tr>
-                                <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">#ID</th>
-                                <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Tanggal</th>
-                                <th class="py-3 px-4 text-left uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Supplier</th>
-                                <th class="text-center py-3 px-4 uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Total Qty</th>
-                                <th class="py-3 px-4 text-right uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Total Final</th>
-                                <th class="py-3 px-4 text-center uppercase font-semibold text-sm text-gray-700 dark:text-gray-300">Aksi</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">#ID</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Tanggal</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Supplier</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Total Qty</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Total Final</th>
+                                <th class="text-left py-3 px-4 text-center uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
@@ -50,9 +50,9 @@
                                     <td class="py-3 px-4">TR-{{ $stokMasuk->id }}</td>
                                     <td class="py-3 px-4">{{ \Carbon\Carbon::parse($stokMasuk->tanggal_masuk)->format('d M Y') }}</td>
                                     <td class="py-3 px-4">{{ $stokMasuk->supplier->nama_supplier ?? 'N/A' }}</td>
-                                    <td class="text-center py-3 px-4 font-bold">{{ $stokMasuk->details_sum_qty }}</td>
-                                    <td class="py-3 px-4 text-right">{{ 'Rp ' . number_format($stokMasuk->total_final, 0, ',', '.') }}</td>
-                                    <td class="py-3 px-4 text-center">
+                                    <td class="py-3 px-4 ">{{ $stokMasuk->details_sum_qty }}</td>
+                                    <td class="py-3 px-4 ">{{ 'Rp ' . number_format($stokMasuk->total_final, 0, ',', '.') }}</td>
+                                    <td class="py-3 px-4 text-center ">
                                         <a href="{{ route('stok-masuk.show', $stokMasuk->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Detail</a>
                                     </td>
                                 </tr>

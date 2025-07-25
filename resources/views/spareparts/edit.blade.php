@@ -66,14 +66,13 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700"> {{-- Margin atas lebih besar, padding atas, border atas untuk pemisah --}}
-                        <a href="{{ route('spareparts.index') }}" class="inline-flex items-center px-6 py-2.5 border border-gray-300 text-base font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition duration-150 ease-in-out mr-4"> {{-- Styling tombol Batal --}}
-                            {{ __('Batal') }}
-                        </a>
-                        <button type="submit" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"> {{-- Styling tombol Simpan --}}
-                            {{ __('Update Markup') }}
-                        </button>
-                    </div>
+                     <div class="flex items-center justify-end mt-4">
+                            <a href="{{ route('spareparts.index') }}" class="inline-flex items-center justify-center px-5 py-2 border border-transparent font-medium text-red-600 dark:text-red-500 hover:underline inline-block mx-1">Batal</a>
+                            <button type="submit"
+                                class="inline-flex items-center justify-center px-4 py-1 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                                {{ __('Simpan') }}
+                            </button>
+                        </div>
                 </form>
             </div>
         </div>

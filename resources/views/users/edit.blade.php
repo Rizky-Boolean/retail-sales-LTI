@@ -60,8 +60,11 @@
                         </div>
 
                         <div class="flex items-center justify-end mt-4">
-                            <a href="{{ route('users.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">Batal</a>
-                            <x-primary-button>{{ __('Update') }}</x-primary-button>
+                            <a href="{{ route('users.index') }}" class="inline-flex items-center justify-center px-5 py-2 border border-transparent font-medium text-red-600 dark:text-red-500 hover:underline inline-block mx-1">Batal</a>
+                            <button type="submit"
+                                class="inline-flex items-center justify-center px-4 py-1 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                                {{ __('Simpan') }}
+                            </button>
                         </div>
                     </form>
                 </div>

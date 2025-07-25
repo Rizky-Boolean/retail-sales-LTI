@@ -23,6 +23,13 @@
                             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required />
                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                         </div>
+
+                        <div class="mt-4">
+                            <x-input-label for="role" :value="__('Role Pengguna')" />
+                            <x-text-input id="role" class="block mt-1 w-full bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+                                        type="text" name="role_display" value="Admin Cabang" disabled />
+                            <small class="text-xs text-gray-500 dark:text-gray-400">Role diatur secara otomatis dan tidak bisa diubah.</small>
+                        </div>
                         
                         <!-- Cabang (Sekarang Wajib) -->
                         <div class="mt-4">
@@ -49,8 +56,12 @@
                         </div>
 
                         <div class="flex items-center justify-end mt-4">
-                            <a href="{{ route('users.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">Batal</a>
-                            <x-primary-button>{{ __('Simpan') }}</x-primary-button>
+                            <a href="{{ route('users.index') }}" class="inline-flex items-center justify-center px-6 py-2 border border-transparent font-medium text-red-600 dark:text-red-500 hover:underline inline-block mx-1">Batal</a>
+                            <button type="submit"
+                                class="inline-flex items-center justify-center px-6 py-2 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                                {{ __('Simpan') }}
+                            </button>
+                        </div>
                         </div>
                     </form>
                 </div>

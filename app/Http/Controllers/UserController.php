@@ -46,7 +46,7 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'admin_cabang', // Role di-hardcode menjadi 'admin_cabang'
+            'role' => 'admin_gudang_cabang',
             'cabang_id' => $request->cabang_id,
         ]);
 

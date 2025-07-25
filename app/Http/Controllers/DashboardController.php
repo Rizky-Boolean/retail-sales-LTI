@@ -96,10 +96,32 @@ class DashboardController extends Controller
     /**
      * Mengambil data untuk dashboard Admin Gudang Induk.
      */
+
     private function getDataForAdminGudangInduk()
     {
+        // [BARU] Query untuk mendapatkan 5 sparepart paling sering didistribusikan
+        $topMovingItems = DB::table('distribusi_details')
+            ->join('distribusis', 'distribusi_details.distribusi_id', '=', 'distribusis.id')
+            ->join('spareparts', 'distribusi_details.sparepart_id', '=', 'spareparts.id')
+            ->select('spareparts.nama_part', DB::raw('SUM(distribusi_details.qty) as total_didistribusi'))
+            ->where('distribusis.tanggal_distribusi', '>=', Carbon::now()->subDays(30))
+            ->groupBy('spareparts.nama_part')
+            ->orderBy('total_didistribusi', 'desc')
+            ->take(5)
+            ->get();
+
         return [
-            'distribusiTerbaru' => Distribusi::with('cabangTujuan')->latest()->take(10)->get(),
+            'totalSparepart' => Sparepart::count(),
+            'totalSupplier' => Supplier::count(),
+            'totalCabang' => Cabang::count(),
+            'stokHampirHabis' => Sparepart::where('stok_induk', '>', 0)
+                                          ->where('stok_induk', '<', 10)
+                                          ->orderBy('stok_induk', 'asc')
+                                          ->take(5)
+                                          ->get(),
+            'distribusiTerbaru' => Distribusi::with('cabangTujuan')->latest()->take(5)->get(),
+            'topMovingItems' => $topMovingItems,
+            'pembelianTerbaru' => StokMasuk::with('supplier')->latest()->take(5)->get(),
         ];
     }
 
@@ -112,34 +134,62 @@ class DashboardController extends Controller
 
         // Penjualan hari ini
         $penjualanHariIni = Penjualan::where('cabang_id', $cabangId)
-                                     ->whereDate('tanggal_penjualan', Carbon::today())
-                                     ->sum('total_final');
+                                      ->whereDate('tanggal_penjualan', Carbon::today())
+                                      ->sum('total_final');
 
         // Keuntungan bulan ini
         $penjualanBulanIni = Penjualan::where('cabang_id', $cabangId)
-                                      ->whereMonth('tanggal_penjualan', Carbon::now()->month)
-                                      ->whereYear('tanggal_penjualan', Carbon::now()->year)
-                                      ->with('details')
-                                      ->get();
+                                        ->whereMonth('tanggal_penjualan', Carbon::now()->month)
+                                        ->whereYear('tanggal_penjualan', Carbon::now()->year)
+                                        ->with('details')
+                                        ->get();
         
         $keuntunganBulanIni = $penjualanBulanIni->reduce(function ($carry, $penjualan) {
             $labaPerNota = $penjualan->details->sum(function ($detail) { return ($detail->harga_jual_satuan - $detail->hpp_satuan) * $detail->qty; });
             return $carry + $labaPerNota;
         }, 0);
 
-        // [UBAH] Logika untuk stok hampir habis di cabang juga diperbaiki
+         // [FIXED] Stok hampir habis di cabang, tidak termasuk stok 0
         $stokHampirHabisCabang = DB::table('cabang_sparepart')
             ->join('spareparts', 'cabang_sparepart.sparepart_id', '=', 'spareparts.id')
             ->select('spareparts.nama_part', 'cabang_sparepart.stok')
             ->where('cabang_sparepart.cabang_id', $cabangId)
-            ->where('cabang_sparepart.stok', '>', 0)
+            ->where('cabang_sparepart.stok', '>', 0) // <-- Tambahkan kondisi ini
             ->where('cabang_sparepart.stok', '<', 10)
             ->orderBy('cabang_sparepart.stok', 'asc')
             ->take(5)
             ->get();
 
-        $penjualan7Hari = Penjualan::select(DB::raw("DATE(tanggal_penjualan) as tanggal"), DB::raw("SUM(total_final) as total"))->where('cabang_id', $cabangId)->where('tanggal_penjualan', '>=', Carbon::now()->subDays(6))->groupBy('tanggal')->orderBy('tanggal', 'asc')->get();
-        $sparepartTerlaris = DB::table('penjualan_details')->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')->join('spareparts', 'penjualan_details.sparepart_id', '=', 'spareparts.id')->select('spareparts.nama_part', DB::raw('SUM(penjualan_details.qty) as total_terjual'))->where('penjualans.cabang_id', $cabangId)->whereMonth('penjualans.tanggal_penjualan', Carbon::now()->month)->whereYear('penjualans.tanggal_penjualan', Carbon::now()->year)->groupBy('spareparts.nama_part')->orderBy('total_terjual', 'desc')->take(5)->get();
+        // [BARU] Data untuk Grafik Komposisi Penjualan (Sparepart Terlaris Bulan Ini)
+        $sparepartTerlaris = DB::table('penjualan_details')
+            ->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')
+            ->join('spareparts', 'penjualan_details.sparepart_id', '=', 'spareparts.id')
+            ->select('spareparts.nama_part', DB::raw('SUM(penjualan_details.qty) as total_terjual'))
+            ->where('penjualans.cabang_id', $cabangId)
+            ->whereMonth('penjualans.tanggal_penjualan', Carbon::now()->month)
+            ->whereYear('penjualans.tanggal_penjualan', Carbon::now()->year)
+            ->groupBy('spareparts.nama_part')
+            ->orderBy('total_terjual', 'desc')
+            ->take(5)
+            ->get();
+
+        // [BARU] Data untuk Daftar Stok Mati (Slow-Moving Items)
+        $slowMovingItems = DB::table('cabang_sparepart')
+            ->join('spareparts', 'cabang_sparepart.sparepart_id', '=', 'spareparts.id')
+            ->leftJoin('penjualan_details', function ($join) use ($cabangId) {
+                $join->on('cabang_sparepart.sparepart_id', '=', 'penjualan_details.sparepart_id')
+                     ->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')
+                     ->where('penjualans.cabang_id', '=', $cabangId)
+                     ->where('penjualans.tanggal_penjualan', '>=', Carbon::now()->subDays(90));
+            })
+            ->select('spareparts.nama_part', 'cabang_sparepart.stok', DB::raw('IFNULL(SUM(penjualan_details.qty), 0) as total_terjual_90_hari'))
+            ->where('cabang_sparepart.cabang_id', $cabangId)
+            ->where('cabang_sparepart.stok', '>', 0) // Hanya tampilkan yang masih ada stok
+            ->groupBy('spareparts.nama_part', 'cabang_sparepart.stok')
+            ->orderBy('total_terjual_90_hari', 'asc')
+            ->take(5)
+            ->get();
+
 
         return [
             'penjualanHariIni' => $penjualanHariIni,
@@ -147,8 +197,8 @@ class DashboardController extends Controller
             'kirimanMenunggu' => Distribusi::where('cabang_id_tujuan', $cabangId)->where('status', 'dikirim')->count(),
             'stokHampirHabis' => $stokHampirHabisCabang,
             'penjualanTerbaru' => Penjualan::where('cabang_id', $cabangId)->latest()->take(5)->get(),
-            'chartPenjualan7Hari' => $penjualan7Hari,
-            'sparepartTerlaris' => $sparepartTerlaris,
+            'chartSparepartTerlaris' => $sparepartTerlaris, // Diubah namanya untuk kejelasan
+            'slowMovingItems' => $slowMovingItems,
         ];
     }
 }

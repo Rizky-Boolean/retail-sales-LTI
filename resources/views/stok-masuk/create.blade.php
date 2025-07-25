@@ -50,13 +50,13 @@
                         {{-- Detail Sparepart --}}
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Detail Sparepart</h3>
                         <div class="overflow-x-auto rounded-md border border-gray-300 dark:border-gray-700 mb-8">
-                            <table class="min-w-full bg-white dark:bg-gray-900">
-                                <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm uppercase">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-200 dark:bg-gray-700 text-sm uppercase">
                                     <tr>
-                                        <th class="py-3 px-4 text-left">Sparepart</th>
-                                        <th class="py-3 px-4 text-center w-24">Qty</th>
-                                        <th class="py-3 px-4 text-right w-48">Harga Beli Satuan</th>
-                                        <th class="py-3 px-4 text-right w-48">Subtotal</th>
+                                        <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Sparepart</th>
+                                        <th class="py-3 px-4 text-center w-24 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Qty</th>
+                                        <th class="py-3 px-4 text-right w-48 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Harga Beli Satuan</th>
+                                        <th class="py-3 px-4 text-right w-48 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Subtotal</th>
                                         <th class="py-3 px-4 w-12"></th> {{-- Kolom untuk tombol hapus --}}
                                     </tr>
                                 </thead>
@@ -152,11 +152,11 @@
                         {{-- Tombol Simpan --}}
                         <div class="flex items-center justify-end">
                             <a href="{{ route('stok-masuk.index') }}"
-                                class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mr-4">
+                                class="inline-flex items-center justify-center px-5 py-2 border border-transparent font-medium text-red-600 dark:text-red-500 hover:underline inline-block mx-1">
                                 Batal
                             </a>
                             <button type="submit"
-                                class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                                class="inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
                                 {{ __('Simpan') }}
                             </button>
                         </div>
