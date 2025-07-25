@@ -90,9 +90,13 @@
                                                 class="w-full bg-gray-100 dark:bg-gray-900/50 text-right border-gray-300 dark:border-gray-700 rounded-md shadow-sm cursor-not-allowed" readonly>
                                         </td>
                                         <td class="py-2 px-4 text-center">
-                                            <button type="button" @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition" title="Hapus Baris">
-                                                <i data-lucide="trash-2" class="w-5 h-5"></i>
-                                            </button>
+                                            <template x-if="items.length > 1">
+                                                <button type="button" @click="removeItem(index)" class="inline-flex items-center justify-center p-2 rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition" title="Hapus Baris">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </template>
                                         </td>
                                     </tr>
                                 </template>
@@ -128,7 +132,7 @@
                         </div>
                         
                         <div class="flex items-center gap-4">
-                            <a href="{{ route('penjualan.index') }}" class="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-white">Batal</a>
+                            <a href="{{ route('penjualan.index') }}" class="inline-flex items-center justify-center px-6 py-2 border border-transparent font-medium text-red-600 dark:text-red-500 hover:underline inline-block mx-1">Batal</a>
                             <button type="submit" class="inline-flex items-center justify-center px-5 py-2.5 text-base font-semibold rounded-lg shadow-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
                                 Simpan Penjualan
                             </button>

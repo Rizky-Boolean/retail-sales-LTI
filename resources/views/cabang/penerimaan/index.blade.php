@@ -67,7 +67,7 @@
                                                     <span>Tolak</span>
                                                 </button>
                                             @endif
-                                            <a href="{{ route('distribusi.show', $kiriman->id) }}" target="_blank" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Lihat Detail">
+                                            <a href="{{ route('distribusi.show', $kiriman->id) }}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Lihat Detail">
                                                 <span>Detail</span>
                                             </a>
                                         </div>
