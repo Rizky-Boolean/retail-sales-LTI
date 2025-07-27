@@ -19,6 +19,20 @@ class StokMasukController extends Controller
                                 
         return view('stok-masuk.index', compact('stokMasuks'));
     }
+    public function search(Request $request)
+    {
+        $search = $request->get('search');
+        
+        $stokMasuks = StokMasuk::with('supplier')
+            ->withSum('details', 'qty')
+            ->where('id', 'LIKE', "%{$search}%")
+            ->orWhereHas('supplier', function($query) use ($search) {
+                $query->where('nama_supplier', 'LIKE', "%{$search}%");
+            })
+            ->get();
+        
+        return response()->json($stokMasuks);
+    }
 
     public function show($id)
     {
@@ -29,11 +43,7 @@ class StokMasukController extends Controller
     public function create()
     {
         $suppliers = Supplier::orderBy('nama_supplier')->get();
-        
-        // [FIX] Tambahkan kembali baris ini untuk mengambil data sparepart
         $spareparts = Sparepart::orderBy('nama_part')->get();
-        
-        // [FIX] Kirim variabel $spareparts ke view
         return view('stok-masuk.create', compact('suppliers', 'spareparts'));
     }
 

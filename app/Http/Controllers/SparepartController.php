@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Sparepart;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 
 
 class SparepartController extends Controller
@@ -16,6 +17,16 @@ class SparepartController extends Controller
     {
         $spareparts = Sparepart::latest()->paginate(10);
         return view('spareparts.index', compact('spareparts'));
+    }
+        public function search(Request $request)
+    {
+        $search = $request->get('search');
+        
+        $spareparts = Sparepart::where('kode_part', 'LIKE', "%{$search}%")
+            ->orWhere('nama_part', 'LIKE', "%{$search}%")
+            ->get();
+            
+        return response()->json($spareparts);
     }
 
     /**

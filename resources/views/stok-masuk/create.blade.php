@@ -4,12 +4,10 @@
             {{ __('Pencatatan Stok Masuk dari Supplier') }}
         </h2>
     </x-slot>
-
     <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
                 <div class="p-8 text-gray-900 dark:text-gray-100">
-
                     @if(session('error'))
                         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
                             <strong class="font-bold">Error!</strong>
@@ -21,7 +19,6 @@
                           x-data="itemDetails({{ json_encode($spareparts) }}, {{ json_encode(old('details', [['sparepart_id' => '', 'qty' => 1, 'harga_beli_satuan' => 0]])) }})"
                           x-init="init()">
                         @csrf
-
                         {{-- Header Form --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                             <div>
@@ -63,20 +60,49 @@
                                 <tbody>
                                     <template x-for="(detail, index) in details" :key="index">
                                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                                            <td class="px-4 py-2">
-                                                <select :name="`details[${index}][sparepart_id]`" x-model="detail.sparepart_id"
+                                            <td class="px-4 py-2 relative">
+                                                {{-- Hidden input untuk menyimpan nilai yang dipilih --}}
+                                                <input type="hidden" :name="`details[${index}][sparepart_id]`" x-model="detail.sparepart_id">
+
+                                                {{-- Input pencarian --}}
+                                                <input 
+                                                    type="text" 
+                                                    :value="getSelectedSparepartText(detail.sparepart_id)"
+                                                    @input="searchSparepart(index, $event.target.value)"
+                                                    @focus="showDropdown(index)"
+                                                    @blur="hideDropdown(index)"
+                                                    placeholder="Ketik untuk mencari atau klik untuk melihat semua..."
                                                     class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                                     required>
-                                                    <option value="">-- Pilih Sparepart --</option>
-                                                    {{-- [MODIFIKASI] Logika dropdown diperbarui --}}
-                                                    <template x-for="sparepart in spareparts" :key="sparepart.id">
-                                                        <option 
-                                                            :value="sparepart.id" 
-                                                            x-text="`${sparepart.kode_part} - ${sparepart.nama_part}`"
-                                                            :disabled="isSparepartSelected(sparepart.id) && detail.sparepart_id != sparepart.id">
-                                                        </option>
+
+                                                {{-- Dropdown hasil pencarian --}}
+                                                <div x-show="detail.showDropdown" 
+                                                     x-transition
+                                                     class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+
+                                                    {{-- Opsi kosong --}}
+                                                    <div @mousedown.prevent="selectSparepart(index, '')"
+                                                         class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 italic">
+                                                        -- Pilih Sparepart --
+                                                    </div>
+
+                                                    {{-- Hasil pencarian --}}
+                                                    <template x-for="sparepart in getFilteredSpareparts(index)" :key="sparepart.id">
+                                                        <div @mousedown.prevent="selectSparepart(index, sparepart.id)"
+                                                             class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                             :class="{ 'opacity-50 cursor-not-allowed': isSparepartSelected(sparepart.id) && detail.sparepart_id != sparepart.id }">
+                                                            <span x-text="`${sparepart.kode_part} - ${sparepart.nama_part}`"></span>
+                                                            <span x-show="isSparepartSelected(sparepart.id) && detail.sparepart_id != sparepart.id" 
+                                                                  class="text-red-500 text-xs ml-2">(Sudah dipilih)</span>
+                                                        </div>
                                                     </template>
-                                                </select>
+
+                                                    {{-- Pesan jika tidak ada hasil --}}
+                                                    <div x-show="getFilteredSpareparts(index).length === 0" 
+                                                         class="px-3 py-2 text-gray-500 italic">
+                                                        Tidak ada sparepart yang ditemukan
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td class="px-4 py-2">
                                                 <input type="number" :name="`details[${index}][qty]`" x-model.number="detail.qty"
@@ -97,7 +123,10 @@
                                             </td>
                                             {{-- [MODIFIKASI] Tambahkan tombol hapus --}}
                                             <td class="px-4 py-2 text-center">
-                                                <button type="button" @click="removeDetail(index)" class="text-red-500 hover:text-red-700 transition">
+                                                <button type="button" 
+                                                        @click="removeDetail(index)" 
+                                                        class="text-red-500 hover:text-red-700 transition"
+                                                        x-show="details.length > 1">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
                                             </td>
@@ -166,31 +195,39 @@
         </div>
     </div>
 
-    {{-- [MODIFIKASI] Logika Alpine.js diperbarui --}}
+    {{-- [MODIFIKASI] Logika Alpine.js diperbarui dengan fitur pencarian --}}
     <script>
         function itemDetails(spareparts, initialDetails) {
             return {
                 spareparts: spareparts,
-                details: initialDetails,
+                details: initialDetails.map(detail => ({
+                    ...detail,
+                    searchQuery: '',
+                    showDropdown: false
+                })),
                 ppnDikenakan: false,
                 totalPembelian: 0,
                 ppn: 0,
                 totalFinal: 0,
-
-                addDetail() {
-                    this.details.push({ sparepart_id: '', qty: 1, harga_beli_satuan: 0 });
-                },
                 
+                addDetail() {
+                    this.details.push({ 
+                        sparepart_id: '', 
+                        qty: 1, 
+                        harga_beli_satuan: 0,
+                        searchQuery: '',
+                        showDropdown: false 
+                    });
+                },
                 removeDetail(index) {
                     // Hanya hapus jika ada lebih dari satu baris
                     if (this.details.length > 1) {
                         this.details.splice(index, 1);
+                        this.calculateTotals();
                     }
                 },
-                
                 updateItemData(index) {
                     const selectedId = this.details[index].sparepart_id;
-                    
                     // Fitur "Batal Pilih"
                     if (!selectedId) {
                         this.details[index].harga_beli_satuan = 0;
@@ -198,16 +235,70 @@
                         return;
                     }
                 },
-                
                 isSparepartSelected(sparepartId) {
                     return this.details.some(detail => detail.sparepart_id == sparepartId);
                 },
-
+                // Fungsi untuk menampilkan teks sparepart yang dipilih
+                getSelectedSparepartText(sparepartId) {
+                    if (!sparepartId) return '';
+                    const sparepart = this.spareparts.find(s => s.id == sparepartId);
+                    return sparepart ? `${sparepart.kode_part} - ${sparepart.nama_part}` : '';
+                },
+                // Fungsi untuk pencarian sparepart
+                searchSparepart(index, query) {
+                    this.details[index].searchQuery = query;
+                    this.details[index].showDropdown = true;
+                    // Jika input kosong, reset pilihan
+                    if (!query.trim()) {
+                        this.details[index].sparepart_id = '';
+                        this.calculateTotals();
+                    }
+                },
+                // Fungsi untuk mendapatkan sparepart yang difilter berdasarkan pencarian
+                getFilteredSpareparts(index) {
+                    const query = this.details[index].searchQuery || '';
+                    if (!query.trim()) {
+                        return this.spareparts;
+                    }
+                    return this.spareparts.filter(sparepart => {
+                        const searchText = `${sparepart.kode_part} ${sparepart.nama_part}`.toLowerCase();
+                        return searchText.includes(query.toLowerCase());
+                    });
+                },
+                // Fungsi untuk menampilkan dropdown
+                showDropdown(index) {
+                    this.details[index].showDropdown = true;
+                    // Reset query pencarian untuk menampilkan semua item
+                    if (!this.details[index].sparepart_id) {
+                        this.details[index].searchQuery = '';
+                    }
+                },
+                // Fungsi untuk menyembunyikan dropdown
+                hideDropdown(index) {
+                    // Delay untuk memungkinkan klik pada item dropdown
+                    setTimeout(() => {
+                        this.details[index].showDropdown = false;
+                    }, 200);
+                },
+                // Fungsi untuk memilih sparepart
+                selectSparepart(index, sparepartId) {
+                    // Cek apakah sparepart sudah dipilih di baris lain
+                    if (sparepartId && this.isSparepartSelected(sparepartId) && this.details[index].sparepart_id != sparepartId) {
+                        return; // Tidak bisa memilih sparepart yang sudah dipilih
+                    }
+                    this.details[index].sparepart_id = sparepartId;
+                    this.details[index].searchQuery = '';
+                    this.details[index].showDropdown = false;
+                    // Reset harga jika tidak ada yang dipilih
+                    if (!sparepartId) {
+                        this.details[index].harga_beli_satuan = 0;
+                    }
+                    this.calculateTotals();
+                },
                 calculateTotals() {
                     this.totalPembelian = this.details.reduce((acc, detail) => {
                         return acc + ((parseFloat(detail.qty) || 0) * (parseFloat(detail.harga_beli_satuan) || 0));
                     }, 0);
-
                     // PPN sekarang dihitung berdasarkan status ceklis
                     this.ppn = this.ppnDikenakan ? this.totalPembelian * 0.11 : 0;
                     this.totalFinal = this.totalPembelian + this.ppn;

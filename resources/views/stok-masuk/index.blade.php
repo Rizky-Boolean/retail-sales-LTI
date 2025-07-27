@@ -13,7 +13,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     {{-- Search --}}
                     <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari histori stok masuk..."
+                        <input type="text" id="searchInput" placeholder="Cari histori stok masuk..."
                             class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                     </div>
 
@@ -79,30 +79,65 @@
 
     {{-- Script Filter --}}
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput").value.toUpperCase();
-            let table = document.getElementById("stokMasukTable");
-            let tr = table.getElementsByTagName("tr");
-            let foundRows = 0;
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        let typingTimer;
+        const doneTypingInterval = 300;
 
-            for (let i = 0; i < tr.length; i++) {
-                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") continue;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
 
-                let tdId = tr[i].getElementsByTagName("td")[0];
-                let tdSupplier = tr[i].getElementsByTagName("td")[2];
-                let match = false;
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const tbody = document.querySelector('#stokMasukTable tbody');
+            const noResultsRow = document.getElementById('noResultsRow');
 
-                if (tdId && tdId.textContent.toUpperCase().includes(input)) match = true;
-                if (tdSupplier && tdSupplier.textContent.toUpperCase().includes(input)) match = true;
+            fetch(`/stok-masuk/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Clear existing rows except the noResultsRow
+                    Array.from(tbody.children).forEach(child => {
+                        if (!child.id || (child.id !== 'noResultsRow' && child.id !== 'initialEmptyRow')) {
+                            child.remove();
+                        }
+                    });
 
-                tr[i].style.display = match ? "" : "none";
-                if (match) foundRows++;
-            }
+                    if (data.length > 0) {
+                        noResultsRow.style.display = 'none';
+                        data.forEach(stokMasuk => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+                            
+                            // Format date using JavaScript
+                            const date = new Date(stokMasuk.tanggal_masuk);
+                            const formattedDate = date.toLocaleDateString('id-ID', { 
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                            });
 
-            if (noResultsRow) noResultsRow.style.display = (foundRows === 0 && input !== "") ? "" : "none";
-            if (initialEmptyRow) initialEmptyRow.style.display = (foundRows === 0 && input === "") ? "" : "none";
+                            row.innerHTML = `
+                                <td class="py-3 px-4">TR-${stokMasuk.id}</td>
+                                <td class="py-3 px-4">${formattedDate}</td>
+                                <td class="py-3 px-4">${stokMasuk.supplier ? stokMasuk.supplier.nama_supplier : 'N/A'}</td>
+                                <td class="py-3 px-4">${stokMasuk.details_sum_qty}</td>
+                                <td class="py-3 px-4">Rp ${Number(stokMasuk.total_final).toLocaleString('id-ID')}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <a href="/stok-masuk/${stokMasuk.id}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Detail</a>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        noResultsRow.style.display = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         }
+    });
     </script>
 </x-app-layout>

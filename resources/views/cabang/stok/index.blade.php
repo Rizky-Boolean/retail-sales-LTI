@@ -19,7 +19,7 @@
                     </div>
                     {{-- Search Input --}}
                     <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari sparepart..."
+                        <input type="text" id="searchInput" placeholder="Cari sparepart..."
                             class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                     </div>
                 </div>
@@ -36,6 +36,7 @@
                                 <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Nama Part</th>
                                 <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Harga Jual</th>
                                 <th class="py-3 px-4 text-center uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Jumlah Stok</th>
+                                <th class="py-3 px-4 text-center uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Status</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
@@ -44,24 +45,30 @@
                                     <td class="py-3 px-4 whitespace-nowrap">{{ $sparepart->kode_part }}</td>
                                     <td class="py-3 px-4">{{ $sparepart->nama_part }}</td>
                                     <td class="py-3 px-4 whitespace-nowrap">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
+                                    <td class="py-3 px-4 text-center">{{ $sparepart->pivot->stok }}</td>
                                     <td class="py-3 px-4 text-center">
-                                        <span class="py-3 px-4 text-center">
-                                            {{ $sparepart->pivot->stok }}
-                                        </span>
+                                        @if($sparepart->pivot->stok <= 0)
+                                            <span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                Habis
+                                            </span>
+                                        @elseif($sparepart->pivot->stok <= 5)
+                                            <span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                Hampir Habis
+                                            </span>
+                                        @else
+                                            <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                Tersedia
+                                            </span>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
                                 <tr id="initialEmptyRow">
-                                    <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
                                         Belum ada stok barang di gudang Anda.
                                     </td>
                                 </tr>
                             @endforelse
-                             <tr id="noResultsRow" style="display: none;">
-                                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                    Tidak ada sparepart yang cocok.
-                                </td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -76,33 +83,80 @@
 
     {{-- Script untuk Search --}}
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput").value.toUpperCase();
-            let table = document.getElementById("stokTable");
-            let tr = table.getElementsByTagName("tr");
-            let foundRows = 0;
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const tbody = document.querySelector('#stokTable tbody');
+        let typingTimer;
+        const doneTypingInterval = 300;
 
-            for (let i = 0; i < tr.length; i++) {
-                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") continue;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
 
-                let tdKode = tr[i].getElementsByTagName("td")[0];
-                let tdNama = tr[i].getElementsByTagName("td")[1];
-                let match = false;
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const noResultsRow = document.getElementById('noResultsRow');
+            
+            // Show loading state
+            tbody.classList.add('opacity-50');
 
-                if (tdKode && tdKode.textContent.toUpperCase().includes(input)) match = true;
-                if (tdNama && tdNama.textContent.toUpperCase().includes(input)) match = true;
+            fetch(`/stok-cabang/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove loading state
+                    tbody.classList.remove('opacity-50');
 
-                tr[i].style.display = match ? "" : "none";
-                if (match) foundRows++;
-            }
+                    // Clear existing rows except special rows
+                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow):not(#initialEmptyRow)');
+                    rows.forEach(row => row.remove());
 
-            if (noResultsRow) noResultsRow.style.display = (foundRows === 0 && input !== "") ? "" : "none";
-            if (initialEmptyRow) {
-                const hasData = table.querySelector('tbody tr:not(#initialEmptyRow):not(#noResultsRow)');
-                initialEmptyRow.style.display = (hasData && foundRows === 0 && input === "") ? "none" : (hasData ? "none" : "");
-            }
+                    if (data.length > 0) {
+                        if (noResultsRow) noResultsRow.style.display = 'none';
+
+                        data.forEach(sparepart => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+
+                            let statusBadge = '';
+                            if (sparepart.pivot.stok <= 0) {
+                                statusBadge = '<span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Habis</span>';
+                            } else if (sparepart.pivot.stok <= 5) {
+                                statusBadge = '<span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Hampir Habis</span>';
+                            } else {
+                                statusBadge = '<span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Tersedia</span>';
+                            }
+
+                            row.innerHTML = `
+                                <td class="py-3 px-4 whitespace-nowrap">${sparepart.kode_part}</td>
+                                <td class="py-3 px-4">${sparepart.nama_part}</td>
+                                <td class="py-3 px-4 whitespace-nowrap">Rp ${Number(sparepart.harga_jual).toLocaleString('id-ID')}</td>
+                                <td class="py-3 px-4 text-center">${sparepart.pivot.stok}</td>
+                                <td class="py-3 px-4 text-center">${statusBadge}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        if (noResultsRow) noResultsRow.style.display = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    tbody.classList.remove('opacity-50');
+                    const errorRow = document.createElement('tr');
+                    errorRow.innerHTML = `
+                        <td colspan="5" class="text-center py-4 text-red-500">
+                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
+                        </td>
+                    `;
+                    tbody.appendChild(errorRow);
+                });
         }
+    });
     </script>
 </x-app-layout>

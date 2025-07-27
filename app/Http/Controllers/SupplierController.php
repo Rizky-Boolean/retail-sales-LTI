@@ -18,6 +18,17 @@ class SupplierController extends Controller
         // Kembalikan view 'suppliers.index' dan kirim data suppliers
         return view('suppliers.index', compact('suppliers'));
     }
+    public function search(Request $request)
+    {
+        $search = $request->get('search');
+        
+        $suppliers = Supplier::where('nama_supplier', 'LIKE', "%{$search}%")
+            ->orWhere('alamat', 'LIKE', "%{$search}%")
+            ->orWhere('kontak', 'LIKE', "%{$search}%")
+            ->get();
+            
+        return response()->json($suppliers);
+    }
 
     /**
      * Menampilkan form untuk membuat supplier baru.

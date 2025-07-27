@@ -13,7 +13,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     {{-- Search Input --}}
                     <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari supplier..."
+                        <input type="text" id="searchInput" placeholder="Cari supplier..."
                             class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                     </div>
 
@@ -116,32 +116,58 @@
 
     {{-- Script untuk Search dan Delete Modal --}}
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput");
-            let filter = input.value.toUpperCase();
-            let table = document.getElementById("suppliersTable");
-            let tr = table.getElementsByTagName("tr");
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
-            let foundResults = false;
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        let typingTimer;
+        const doneTypingInterval = 300; // Wait 300ms after user stops typing
 
-            for (let i = 0; i < tr.length; i++) {
-                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") continue;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
 
-                let foundInRow = false;
-                let tdNama = tr[i].getElementsByTagName("td")[0];
-                let tdAlamat = tr[i].getElementsByTagName("td")[1];
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const tbody = document.querySelector('#suppliersTable tbody');
+            const noResultsRow = document.getElementById('noResultsRow');
 
-                if (tdNama && tdNama.textContent.toUpperCase().indexOf(filter) > -1) foundInRow = true;
-                if (tdAlamat && tdAlamat.textContent.toUpperCase().indexOf(filter) > -1) foundInRow = true;
+            fetch(`/suppliers/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Clear existing rows except the noResultsRow
+                    Array.from(tbody.children).forEach(child => {
+                        if (!child.id || (child.id !== 'noResultsRow' && child.id !== 'initialEmptyRow')) {
+                            child.remove();
+                        }
+                    });
 
-                tr[i].style.display = foundInRow ? "" : "none";
-                if (foundInRow) foundResults = true;
-            }
-
-            if (noResultsRow) noResultsRow.style.display = foundResults || filter === "" ? "none" : "";
-            if (initialEmptyRow) initialEmptyRow.style.display = filter !== "" ? "none" : "";
+                    if (data.length > 0) {
+                        noResultsRow.style.display = 'none';
+                        data.forEach(supplier => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+                            row.innerHTML = `
+                                <td class="py-3 px-4">${supplier.nama_supplier}</td>
+                                <td class="py-3 px-4">${supplier.alamat || ''}</td>
+                                <td class="py-3 px-4">${supplier.kontak || ''}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <div class="flex justify-center gap-2">
+                                        <a href="/suppliers/${supplier.id}/edit" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Edit</a>
+                                        <button type="button" onclick="showDeleteModal(${supplier.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 py-1 px-2 rounded">Hapus</button>
+                                    </div>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        noResultsRow.style.display = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         }
+    });
 
         function showDeleteModal(id) {
             const deleteForm = document.getElementById('deleteForm');

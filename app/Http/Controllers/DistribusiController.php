@@ -22,6 +22,36 @@ class DistribusiController extends Controller
         $distribusis = Distribusi::with('cabangTujuan')->latest()->paginate(10);
         return view('distribusi.index', compact('distribusis'));
     }
+    public function search(Request $request)
+    {
+        $search = $request->get('search');
+        
+        $distribusis = Distribusi::with('cabangTujuan')
+            ->where(function($query) use ($search) {
+                $query->where('id', 'LIKE', "%{$search}%")
+                    ->orWhereHas('cabangTujuan', function($q) use ($search) {
+                        $q->where('nama_cabang', 'LIKE', "%{$search}%");
+                    });
+            })
+            ->latest()
+            ->get();
+        
+        return response()->json($distribusis);
+    }
+    public function searchStokInduk(Request $request)
+    {
+        $search = $request->get('search');
+        
+        $spareparts = Sparepart::where(function($query) use ($search) {
+            $query->where('kode_part', 'LIKE', "%{$search}%")
+                ->orWhere('nama_part', 'LIKE', "%{$search}%")
+                ->orWhere('satuan', 'LIKE', "%{$search}%");
+        })
+        ->orderBy('nama_part')
+        ->get();
+        
+        return response()->json($spareparts);
+    }
 
     /**
      * Menampilkan detail satu transaksi distribusi.
@@ -47,8 +77,7 @@ class DistribusiController extends Controller
      */
     public function create()
     {
-        $cabangs = \App\Models\Cabang::orderBy('nama_cabang')->get();;
-        // Ambil hanya sparepart yang punya stok di gudang induk
+        $cabangs = \App\Models\Cabang::orderBy('nama_cabang')->get();
         $spareparts = \App\Models\Sparepart::where('stok_induk', '>', 0)->orderBy('nama_part')->get();
         return view('distribusi.create', compact('cabangs', 'spareparts'));
     }

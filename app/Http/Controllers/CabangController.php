@@ -10,6 +10,8 @@ use App\Notifications\ShipmentReceivedNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\ShipmentRejectedNotification;
+use Illuminate\Support\Facades\Log;
+use App\Models\User;
 
 class CabangController extends Controller
 {
@@ -113,6 +115,25 @@ class CabangController extends Controller
         $spareparts = $user->cabang->spareparts()->paginate(15);
         return view('cabang.stok.index', compact('spareparts'));
     }
+        public function searchStok(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $search = $request->get('search');
+            
+            $spareparts = $user->cabang->spareparts()
+                ->where(function($query) use ($search) {
+                    $query->where('spareparts.kode_part', 'LIKE', "%{$search}%")
+                        ->orWhere('spareparts.nama_part', 'LIKE', "%{$search}%");
+                })
+                ->select('spareparts.*', 'cabang_sparepart.stok')
+                ->get();
+                
+            return response()->json($spareparts);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     public function penerimaanIndex()
     {
@@ -123,6 +144,28 @@ class CabangController extends Controller
                                     ->paginate(10);
 
         return view('cabang.penerimaan.index', compact('kirimanMasuk'));
+    }
+    public function searchPenerimaan(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $search = $request->get('search');
+            
+            $kirimanMasuk = Distribusi::where('cabang_id_tujuan', $user->cabang_id)
+                ->where(function($query) use ($search) {
+                    $query->where('id', 'LIKE', "%{$search}%")
+                        ->orWhereHas('user', function($q) use ($search) {
+                            $q->where('name', 'LIKE', "%{$search}%");
+                        });
+                })
+                ->with('user')
+                ->latest()
+                ->get();
+                
+            return response()->json($kirimanMasuk);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function terimaBarang(Distribusi $distribusi)
@@ -144,10 +187,17 @@ class CabangController extends Controller
             }
             $distribusi->update(['status' => 'diterima']);
         });
-
         $sender = $distribusi->user; 
-        if ($sender) {
-            Notification::send($sender, new ShipmentReceivedNotification($distribusi, Auth::user()->name));
+        $superAdmins = User::where('role', 'super_admin')->get();
+        $adminsGudangInduk = User::where('role', 'admin_gudang_induk')->get();
+        $recipients = collect([$sender])
+                        ->merge($superAdmins)
+                        ->merge($adminsGudangInduk)
+                        ->filter()
+                        ->unique('id');
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new ShipmentReceivedNotification($distribusi, Auth::user()->name));
         }
 
         return redirect()->route('cabang.penerimaan.index')->with('success', 'Barang berhasil diterima dan stok telah ditambahkan.');
@@ -170,15 +220,20 @@ class CabangController extends Controller
                 'alasan_penolakan' => $request->alasan_penolakan,
             ]);
         });
-        
-        $sender = $distribusi->user; // Dapatkan user yang membuat distribusi
-        $rejectorName = Auth::user()->name; // Nama admin cabang yang menolak
+        $sender = $distribusi->user;
+        $superAdmins = User::where('role', 'super_admin')->get();
+        $adminsGudangInduk = User::where('role', 'admin_gudang_induk')->get(); // Ambil semua admin gudang induk
 
-        if ($sender) {
-            // Kirim notifikasi ke pengirim
-            Notification::send($sender, new ShipmentRejectedNotification($distribusi, $rejectorName));
+        $recipients = collect([$sender])
+                        ->merge($superAdmins)
+                        ->merge($adminsGudangInduk)
+                        ->filter()
+                        ->unique('id');
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new ShipmentRejectedNotification($distribusi, Auth::user()->name));
         }
-        // [END] Logika untuk Mengirim Notifikasi Penolakan
+
         return redirect()->route('cabang.penerimaan.index')->with('success', 'Kiriman berhasil ditolak dan stok telah dikembalikan ke gudang induk.');
     }
 }

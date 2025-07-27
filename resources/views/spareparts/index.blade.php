@@ -13,7 +13,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     {{-- Search Input --}}
                     <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari sparepart..."
+                        <input type="text" id="searchInput" placeholder="Cari sparepart..."
                             class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                     </div>
                     {{-- Tombol Aksi --}}
@@ -123,63 +123,57 @@
 
     {{-- Script untuk Search --}}
     <script>
-        // Fungsi Search Tabel
-        function filterTable() {
-            let input = document.getElementById("searchInput");
-            let filter = input.value.toUpperCase();
-            let table = document.getElementById("sparepartsTable");
-            let dataRows = table.querySelectorAll('tbody .data-row'); // Hanya ambil baris data
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
-            let foundDataRows = 0; // Menghitung berapa banyak baris data yang terlihat
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        let typingTimer;
+        const doneTypingInterval = 300; // Wait 300ms after user stops typing
 
-            // Sembunyikan semua baris data dan baris pesan kosong terlebih dahulu
-            dataRows.forEach(row => {
-                row.style.display = "none";
-            });
-            noResultsRow.classList.add('hidden'); // Gunakan classList.add/remove
-            if (initialEmptyRow) {
-                initialEmptyRow.classList.add('hidden');
-            }
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
 
-            // Jika filter kosong, tampilkan semua baris data (atau initialEmptyRow jika tidak ada data)
-            if (filter === "") {
-                if (dataRows.length > 0) {
-                    dataRows.forEach(row => {
-                        row.style.display = "";
-                        foundDataRows++;
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const tbody = document.querySelector('#sparepartsTable tbody');
+            const noResultsRow = document.getElementById('noResultsRow');
+
+            fetch(`/spareparts/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Clear existing rows except the noResultsRow
+                    Array.from(tbody.children).forEach(child => {
+                        if (!child.id || (child.id !== 'noResultsRow' && child.id !== 'initialEmptyRow')) {
+                            child.remove();
+                        }
                     });
-                } else if (initialEmptyRow) {
-                    initialEmptyRow.classList.remove('hidden'); // Tampilkan pesan "Tidak ada data sparepart."
-                }
-            } else {
-                // Jika filter tidak kosong, filter baris data
-                dataRows.forEach(row => {
-                    let tdKodePart = row.getElementsByTagName("td")[0]; // Kolom Kode Part
-                    let tdNamaPart = row.getElementsByTagName("td")[1]; // Kolom Nama Part
 
-                    let rowMatchesFilter = false;
-                    if (tdKodePart && (tdKodePart.textContent || tdKodePart.innerText).toUpperCase().indexOf(filter) > -1) {
-                        rowMatchesFilter = true;
-                    }
-                    if (!rowMatchesFilter && tdNamaPart && (tdNamaPart.textContent || tdNamaPart.innerText).toUpperCase().indexOf(filter) > -1) {
-                        rowMatchesFilter = true;
-                    }
-
-                    if (rowMatchesFilter) {
-                        row.style.display = "";
-                        foundDataRows++;
+                    if (data.length > 0) {
+                        noResultsRow.classList.add('hidden');
+                        data.forEach(sparepart => {
+                            const row = document.createElement('tr');
+                            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 data-row';
+                            row.innerHTML = `
+                                <td class="text-left py-3 px-4 whitespace-nowrap">${sparepart.kode_part}</td>
+                                <td class="text-left py-3 px-4 whitespace-nowrap">${sparepart.nama_part}</td>
+                                <td class="text-left py-3 px-4 whitespace-nowrap">${sparepart.satuan}</td>
+                                <td class="text-right py-3 px-4 whitespace-nowrap">Rp ${Number(sparepart.harga_jual).toLocaleString('id-ID')}</td>
+                                <td class="text-center py-3 px-4 whitespace-nowrap">
+                                    <a href="/spareparts/${sparepart.id}/edit" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Edit</a>
+                                    <button type="button" onclick="showDeleteModal(${sparepart.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 py-1 px-2 rounded">Hapus</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
                     } else {
-                        row.style.display = "none";
+                        noResultsRow.classList.remove('hidden');
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                 });
-
-                // Setelah filtering, jika tidak ada baris data yang terlihat, tampilkan noResultsRow
-                if (foundDataRows === 0) {
-                    noResultsRow.classList.remove('hidden');
-                }
-            }
         }
+    });
 
         // Fungsi untuk menampilkan modal konfirmasi hapus
         function showDeleteModal(id) {

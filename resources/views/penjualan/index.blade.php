@@ -13,7 +13,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     {{-- Search Input --}}
                     <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari No. Nota / Pembeli..."
+                        <input type="text" id="searchInput" placeholder="Cari No. Nota / Pembeli..."
                             class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                     </div>
 
@@ -75,44 +75,88 @@
         </div>
     </div>
 
-    {{-- [DIHAPUS] Modal Konfirmasi Pembatalan --}}
-
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput");
-            let filter = input.value.toUpperCase();
-            let table = document.getElementById("penjualanTable");
-            let dataRows = table.querySelectorAll('tbody .data-row');
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
-            let visibleDataRowsCount = 0;
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const tbody = document.querySelector('#penjualanTable tbody');
+        let typingTimer;
+        const doneTypingInterval = 300;
 
-            dataRows.forEach(row => {
-                let tdNota = row.getElementsByTagName("td")[0];
-                let tdPembeli = row.getElementsByTagName("td")[2];
-                let rowMatchesFilter = false;
+        // Remove the existing onkeyup attribute
+        searchInput.removeAttribute('onkeyup');
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
 
-                if (tdNota && tdNota.textContent.toUpperCase().indexOf(filter) > -1) {
-                    rowMatchesFilter = true;
-                }
-                if (!rowMatchesFilter && tdPembeli && tdPembeli.textContent.toUpperCase().indexOf(filter) > -1) {
-                    rowMatchesFilter = true;
-                }
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const noResultsRow = document.getElementById('noResultsRow');
+            
+            // Show loading state
+            tbody.classList.add('opacity-50');
 
-                if (rowMatchesFilter) {
-                    row.style.display = "";
-                    visibleDataRowsCount++;
-                } else {
-                    row.style.display = "none";
-                }
-            });
+            fetch(`/penjualan/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove loading state
+                    tbody.classList.remove('opacity-50');
 
-            noResultsRow.style.display = (visibleDataRowsCount === 0 && filter !== "") ? "" : "none";
-            if (initialEmptyRow) {
-                initialEmptyRow.style.display = (dataRows.length === 0 && filter === "") ? "" : "none";
-            }
+                    // Clear existing rows except special rows
+                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow):not(#initialEmptyRow)');
+                    rows.forEach(row => row.remove());
+
+                    if (data.length > 0) {
+                        if (noResultsRow) noResultsRow.style.display = 'none';
+                        
+                        data.forEach(penjualan => {
+                            const row = document.createElement('tr');
+                            row.className = 'data-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+                            
+                            // Format date
+                            const date = new Date(penjualan.tanggal_penjualan).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                            });
+
+                            row.innerHTML = `
+                                <td class="py-3 px-4 whitespace-nowrap">${penjualan.nomor_nota}</td>
+                                <td class="py-3 px-4 whitespace-nowrap">${date}</td>
+                                <td class="py-3 px-4">${penjualan.nama_pembeli}</td>
+                                <td class="py-3 px-4 text-right whitespace-nowrap">Rp ${Number(penjualan.total_final).toLocaleString('id-ID')}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <div class="flex justify-center items-center gap-4">
+                                        <a href="/penjualan/${penjualan.id}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Lihat Nota">
+                                            <span>Nota</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        if (noResultsRow) noResultsRow.style.display = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    tbody.classList.remove('opacity-50');
+                    const errorRow = document.createElement('tr');
+                    errorRow.innerHTML = `
+                        <td colspan="5" class="text-center py-4 text-red-500">
+                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
+                        </td>
+                    `;
+                    tbody.appendChild(errorRow);
+                });
         }
-
-        {{-- [DIHAPUS] Script untuk Modal Pembatalan --}}
+    });
     </script>
 </x-app-layout>

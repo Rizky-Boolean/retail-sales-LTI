@@ -47,12 +47,17 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
+    <div class="py-10" x-data="{ 
+        showRejectModal: false, 
+        showAcceptModal: false, 
+        rejectActionUrl: '{{ route('cabang.penerimaan.tolak', $distribusi) }}',
+        acceptActionUrl: '{{ route('cabang.penerimaan.terima', $distribusi) }}'
+    }">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             
             {{-- Tombol Aksi di Atas --}}
             <div class="flex justify-between items-center mb-6 print-hide">
-                {{-- [FIXED] Logika tombol kembali dipisah berdasarkan peran --}}
+                {{-- Tombol Kembali --}}
                 @if(in_array(auth()->user()->role, ['super_admin', 'admin_gudang_induk']))
                     <a href="{{ route('distribusi.index') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 font-medium">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -65,10 +70,116 @@
                     </a>
                 @endif
 
-                {{-- Tombol Cetak Memanggil Fungsi Baru --}}
-                <button onclick="printInvoice()" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-base font-medium text-white bg-gray-600 rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-150 ease-in-out">
-                    <span>Cetak Bukti</span>
-                </button>
+                {{-- Grup Tombol Aksi Kanan --}}
+                <div class="flex items-center space-x-2">
+                    <button onclick="printInvoice()" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gray-600 rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition">
+                        <span>Cetak Bukti</span>
+                    </button>
+
+                    {{-- Tombol Terima/Tolak (Hanya untuk Admin Cabang & Status Dikirim) --}}
+                    @if($distribusi->status === 'dikirim' && auth()->user()->role === 'admin_gudang_cabang')
+                        <button @click="showRejectModal = true" class="px-5 py-2.5 text-sm font-semibold text-red-600 bg-transparent border border-red-600 rounded-lg hover:bg-red-600 hover:text-white transition">
+                            Tolak
+                        </button>
+                        <button @click="showAcceptModal = true" class="px-5 py-2.5 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
+                            Terima Barang
+                        </button>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Modal Konfirmasi Penerimaan --}}
+            <div x-show="showAcceptModal" x-transition class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+                <div @click.away="showAcceptModal = false" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                    <div class="flex items-center mb-4">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Konfirmasi Penerimaan Barang</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                            Anda yakin ingin menerima distribusi barang ini? Setelah diterima:
+                        </p>
+                        <ul class="text-sm text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1">
+                            <li>Stok akan ditambahkan ke gudang cabang Anda</li>
+                            <li>Status distribusi akan berubah menjadi "Diterima"</li>
+                            <li>Aksi ini tidak dapat dibatalkan</li>
+                        </ul>
+                    </div>
+
+                    <form :action="acceptActionUrl" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <div class="mb-4">
+                            <label for="catatan_penerimaan" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Catatan Penerimaan (Opsional)
+                            </label>
+                            <textarea 
+                                id="catatan_penerimaan"
+                                name="catatan_penerimaan" 
+                                rows="3" 
+                                class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100" 
+                                placeholder="Contoh: Semua barang diterima dalam kondisi baik..."
+                            ></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-2">
+                            <button type="button" @click="showAcceptModal = false" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                                Batal
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                Ya, Terima Barang
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {{-- Modal Alasan Penolakan --}}
+            <div x-show="showRejectModal" x-transition class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+                <div @click.away="showRejectModal = false" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                    <div class="flex items-center mb-4">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Alasan Penolakan</h3>
+                        </div>
+                    </div>
+                    
+                    <form :action="rejectActionUrl" method="POST">
+                        @csrf 
+                        @method('PATCH')
+                        <div class="mb-4">
+                            <label for="alasan_penolakan" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Masukkan alasan penolakan <span class="text-red-500">*</span>
+                            </label>
+                            <textarea 
+                                id="alasan_penolakan"
+                                name="alasan_penolakan" 
+                                rows="3" 
+                                class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100" 
+                                required 
+                                placeholder="Contoh: Jumlah barang tidak sesuai, kondisi rusak, dll."
+                            ></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-2">
+                            <button type="button" @click="showRejectModal = false" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                                Batal
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
+                                Tolak Kiriman
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             {{-- Kontainer Faktur --}}

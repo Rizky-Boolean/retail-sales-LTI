@@ -10,11 +10,9 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6 md:p-8 border border-gray-200 dark:border-gray-700">
 
                 {{-- Search Input --}}
-                <div class="flex justify-between items-center mb-6">
-                    <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari sparepart..."
-                            class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
-                    </div>
+                <div class="mb-6 w-full md:w-1/3">
+                    <input type="text" id="searchInput" placeholder="Cari sparepart..."
+                        class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                 </div>
 
                 {{-- Tabel Data Stok --}}
@@ -25,6 +23,7 @@
                                 <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Kode Part</th>
                                 <th class="py-3 px-4 text-left uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Nama Part</th>
                                 <th class="py-3 px-4 text-center uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Stok Tersedia</th>
+                                <th class="py-3 px-4 text-center uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Status</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
@@ -32,17 +31,34 @@
                                 <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                     <td class="py-3 px-4">{{ $sparepart->kode_part }}</td>
                                     <td class="py-3 px-4">{{ $sparepart->nama_part }}</td>
+                                    <td class="py-3 px-4 text-center">{{ $sparepart->stok_induk }}</td>
                                     <td class="py-3 px-4 text-center">
-                                        <span class="py-3 px-4 text-center">{{ $sparepart->stok_induk }}</span>
+                                        @if($sparepart->stok_induk <= 0)
+                                            <span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                Habis
+                                            </span>
+                                        @elseif($sparepart->stok_induk <= 5)
+                                            <span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                Hampir Habis
+                                            </span>
+                                        @else
+                                            <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                Tersedia
+                                            </span>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
                                 <tr id="initialEmptyRow">
-                                    <td colspan="3" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data sparepart di gudang induk.</td>
+                                    <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada data sparepart di gudang induk.
+                                    </td>
                                 </tr>
                             @endforelse
                             <tr id="noResultsRow" style="display: none;">
-                                <td colspan="3" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada sparepart yang cocok.</td>
+                                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                    Tidak ada sparepart yang cocok.
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -59,33 +75,105 @@
 
     {{-- Script untuk Search --}}
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput").value.toUpperCase();
-            let table = document.getElementById("stokTable");
-            let tr = table.getElementsByTagName("tr");
-            let foundRows = 0;
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const tbody = document.querySelector('#stokTable tbody');
+        let typingTimer;
+        const doneTypingInterval = 300;
 
-            for (let i = 0; i < tr.length; i++) {
-                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") continue;
-
-                let tdKode = tr[i].getElementsByTagName("td")[0];
-                let tdNama = tr[i].getElementsByTagName("td")[1];
-                let match = false;
-
-                if (tdKode && tdKode.textContent.toUpperCase().includes(input)) match = true;
-                if (tdNama && tdNama.textContent.toUpperCase().includes(input)) match = true;
-
-                tr[i].style.display = match ? "" : "none";
-                if (match) foundRows++;
-            }
-
-            if (noResultsRow) noResultsRow.style.display = (foundRows === 0 && input !== "") ? "" : "none";
-            if (initialEmptyRow) {
-                const hasData = table.querySelector('tbody tr:not(#initialEmptyRow):not(#noResultsRow)');
-                initialEmptyRow.style.display = (hasData && foundRows === 0 && input === "") ? "none" : (hasData ? "none" : "");
-            }
+        // Create empty state rows if they don't exist
+        if (!document.getElementById('noResultsRow')) {
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'noResultsRow';
+            noResultsRow.style.display = 'none';
+            noResultsRow.innerHTML = `
+                <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                    Tidak ada sparepart yang cocok dengan pencarian.
+                </td>
+            `;
+            tbody.appendChild(noResultsRow);
         }
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
+
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const noResultsRow = document.getElementById('noResultsRow');
+
+            // Show loading state
+            tbody.classList.add('opacity-50');
+
+            fetch(`/stok-gudang-induk/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove loading state
+                    tbody.classList.remove('opacity-50');
+
+                    // Clear existing rows except special rows
+                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow)');
+                    rows.forEach(row => row.remove());
+
+                    if (data.length > 0) {
+                        if (noResultsRow) noResultsRow.style.display = 'none';
+
+                        data.forEach(sparepart => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+
+                            // Determine stock status and class
+                            let stockStatus = '';
+                            let stockClass = '';
+                            
+                            if (sparepart.stok_induk <= 0) {
+                                stockStatus = 'Habis';
+                                stockClass = 'text-red-600 dark:text-red-400';
+                            } else if (sparepart.stok_induk <= 5) {
+                                stockStatus = 'Hampir Habis';
+                                stockClass = 'text-yellow-600 dark:text-yellow-400';
+                            } else {
+                                stockStatus = 'Tersedia';
+                                stockClass = 'text-green-600 dark:text-green-400';
+                            }
+
+                            row.innerHTML = `
+                                <td class="py-3 px-4">${sparepart.kode_part}</td>
+                                <td class="py-3 px-4">${sparepart.nama_part}</td>
+                                <td class="py-3 px-4 text-center">${sparepart.stok_induk}</td>
+                                <td class="py-3 px-4 text-center">
+                                    ${sparepart.stok_induk <= 0 
+                                        ? '<span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Habis</span>'
+                                        : sparepart.stok_induk <= 5
+                                            ? '<span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Hampir Habis</span>'
+                                            : '<span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Tersedia</span>'
+                                    }
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        if (noResultsRow) noResultsRow.style.display = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    tbody.classList.remove('opacity-50');
+                    const errorRow = document.createElement('tr');
+                    errorRow.innerHTML = `
+                        <td colspan="4" class="text-center py-4 text-red-500">
+                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
+                        </td>
+                    `;
+                    tbody.appendChild(errorRow);
+                });
+        }
+    });
     </script>
 </x-app-layout>

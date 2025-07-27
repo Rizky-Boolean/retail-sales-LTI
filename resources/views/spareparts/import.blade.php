@@ -23,6 +23,7 @@
                     <ol class="list-decimal list-inside text-sm leading-relaxed">
                         <li>Unduh format template Excel yang telah disediakan di bawah ini.</li>
                         <li>Isi data sparepart sesuai dengan kolom yang ada di template. Pastikan tidak mengubah nama *header* kolom.</li>
+                        <li>Pastikan sebelum mengimport data, tidak ada sparepart yang sama di database.</li>
                         <li>Pastikan kolom `kode_part` unik dan tidak kosong.</li>
                         <li>Upload file Excel (.xlsx) yang sudah diisi pada form di bawah ini.</li>
                         <li>Sistem akan menampilkan pratinjau data dan validasi kesalahan sebelum data disimpan permanen.</li>

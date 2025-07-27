@@ -23,6 +23,25 @@ class PenjualanController extends Controller
         
         return view('penjualan.index', compact('penjualans'));
     }
+    public function search(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $search = $request->get('search');
+            
+            $penjualans = Penjualan::where('cabang_id', $user->cabang_id)
+                ->where(function($query) use ($search) {
+                    $query->where('nomor_nota', 'LIKE', "%{$search}%")
+                        ->orWhere('nama_pembeli', 'LIKE', "%{$search}%");
+                })
+                ->latest()
+                ->get();
+                
+            return response()->json($penjualans);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * Menampilkan form untuk membuat transaksi penjualan baru.

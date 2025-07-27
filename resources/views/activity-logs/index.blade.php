@@ -9,9 +9,9 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6 md:p-8 border border-gray-200 dark:border-gray-700">
 
-                {{-- Search Bar (Optional) --}}
+                {{-- Search Bar --}}
                 <div class="mb-6 w-full md:w-1/3">
-                    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari log aktivitas..."
+                    <input type="text" id="searchInput" placeholder="Cari log aktivitas..."
                         class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                 </div>
 
@@ -56,30 +56,114 @@
 
     {{-- Script Search Table --}}
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput").value.toUpperCase();
-            let table = document.getElementById("logTable");
-            let tr = table.getElementsByTagName("tr");
-            let foundRows = 0;
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const tbody = document.querySelector('#logTable tbody');
+        let typingTimer;
+        const doneTypingInterval = 300;
 
-            for (let i = 0; i < tr.length; i++) {
-                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") continue;
-
-                let found = false;
-                let tdUser = tr[i].getElementsByTagName("td")[1];
-                let tdDesc = tr[i].getElementsByTagName("td")[2];
-
-                if (tdUser && tdUser.textContent.toUpperCase().includes(input)) found = true;
-                if (tdDesc && tdDesc.textContent.toUpperCase().includes(input)) found = true;
-
-                tr[i].style.display = found ? "" : "none";
-                if (found) foundRows++;
-            }
-
-            if (noResultsRow) noResultsRow.style.display = (foundRows === 0 && input !== "") ? "" : "none";
-            if (initialEmptyRow) initialEmptyRow.style.display = (foundRows === 0 && input === "") ? "" : "none";
+        // Make sure we have the empty state rows
+        if (!document.getElementById('noResultsRow')) {
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'noResultsRow';
+            noResultsRow.innerHTML = `
+                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                    Tidak ada log yang cocok.
+                </td>
+            `;
+            noResultsRow.style.display = 'none';
+            tbody.appendChild(noResultsRow);
         }
+
+        if (!document.getElementById('initialEmptyRow')) {
+            const initialEmptyRow = document.createElement('tr');
+            initialEmptyRow.id = 'initialEmptyRow';
+            initialEmptyRow.innerHTML = `
+                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                    Tidak ada aktivitas yang tercatat.
+                </td>
+            `;
+            tbody.appendChild(initialEmptyRow);
+        }
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
+
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const noResultsRow = document.getElementById('noResultsRow');
+            const initialEmptyRow = document.getElementById('initialEmptyRow');
+
+            // Show loading state
+            tbody.classList.add('opacity-50');
+
+            fetch(`/activity-logs/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove loading state
+                    tbody.classList.remove('opacity-50');
+
+                    // Clear existing rows except our special rows
+                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow):not(#initialEmptyRow)');
+                    rows.forEach(row => row.remove());
+
+                    if (Array.isArray(data) && data.length > 0) {
+                        // Hide both special rows
+                        if (noResultsRow) noResultsRow.style.display = 'none';
+                        if (initialEmptyRow) initialEmptyRow.style.display = 'none';
+                        
+                        data.forEach(log => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+                            
+                            const date = new Date(log.created_at).toLocaleString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
+
+                            row.innerHTML = `
+                                <td class="py-2 px-4 whitespace-nowrap">${date}</td>
+                                <td class="py-2 px-4">${log.user ? log.user.name : 'Sistem'}</td>
+                                <td class="py-2 px-4">${log.description}</td>
+                                <td class="py-2 px-4">${log.ip_address}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        // Show appropriate empty state
+                        if (searchValue && noResultsRow) {
+                            noResultsRow.style.display = '';
+                            if (initialEmptyRow) initialEmptyRow.style.display = 'none';
+                        } else if (initialEmptyRow) {
+                            if (noResultsRow) noResultsRow.style.display = 'none';
+                            initialEmptyRow.style.display = '';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    tbody.classList.remove('opacity-50');
+                    // Show error message to user
+                    const errorRow = document.createElement('tr');
+                    errorRow.innerHTML = `
+                        <td colspan="4" class="text-center py-4 text-red-500">
+                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
+                        </td>
+                    `;
+                    tbody.appendChild(errorRow);
+                });
+        }
+    });
     </script>
 </x-app-layout>

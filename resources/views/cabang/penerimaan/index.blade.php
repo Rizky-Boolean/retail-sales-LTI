@@ -57,7 +57,6 @@
                                     </td>
                                     <td class="text-center py-3 px-4">
                                         <div class="flex justify-center items-center gap-4">
-                                            {{-- [DIUBAH] Menghapus @else yang berisi strip --}}
                                             <div class="flex justify-center items-center gap-4">
                                             @if($kiriman->status == 'dikirim')
                                                 <button type="button" onclick="showTerimaModal('{{ route('cabang.penerimaan.terima', $kiriman->id) }}')" class="flex items-center gap-1 text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" title="Terima">
@@ -126,27 +125,116 @@
     </div>
 
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput").value.toUpperCase();
-            let table = document.getElementById("kirimanTable");
-            let tr = table.getElementsByTagName("tr");
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
-            let foundRows = 0;
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const tbody = document.querySelector('#kirimanTable tbody');
+        let typingTimer;
+        const doneTypingInterval = 300;
 
-            for (let i = 0; i < tr.length; i++) {
-                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") continue;
-                let tdId = tr[i].getElementsByTagName("td")[0];
-                if (tdId && tdId.textContent.toUpperCase().includes(input)) {
-                    tr[i].style.display = "";
-                    foundRows++;
-                } else {
-                    tr[i].style.display = "none";
-                }
-            }
-            if(noResultsRow) noResultsRow.style.display = (foundRows === 0 && input !== "") ? "" : "none";
-            if(initialEmptyRow) initialEmptyRow.style.display = (foundRows > 0 || input !== "") ? "none" : "";
+        // Remove the existing onkeyup attribute from searchInput
+        searchInput.removeAttribute('onkeyup');
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(performSearch, doneTypingInterval);
+        });
+
+        function performSearch() {
+            const searchValue = searchInput.value;
+            const noResultsRow = document.getElementById('noResultsRow');
+            
+            // Show loading state
+            tbody.classList.add('opacity-50');
+
+            fetch(`/penerimaan/search?search=${encodeURIComponent(searchValue)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove loading state
+                    tbody.classList.remove('opacity-50');
+
+                    // Clear existing rows except special rows
+                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow):not(#initialEmptyRow)');
+                    rows.forEach(row => row.remove());
+
+                    if (data.length > 0) {
+                        if (noResultsRow) noResultsRow.style.display = 'none';
+                        
+                        data.forEach(kiriman => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-200 dark:border-gray-700';
+                            
+                            // Format date
+                            const date = new Date(kiriman.tanggal_distribusi).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                            });
+
+                            // Determine status class
+                            let statusClass = '';
+                            if (kiriman.status === 'dikirim') statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-200';
+                            else if (kiriman.status === 'diterima') statusClass = 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-200';
+                            else if (kiriman.status === 'ditolak') statusClass = 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-200';
+
+                            // Create actions buttons
+                            let actions = `<a href="/distribusi/${kiriman.id}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Lihat Detail"><span>Detail</span></a>`;
+                            
+                            if (kiriman.status === 'dikirim') {
+                                actions = `
+                                    <div class="flex justify-center items-center gap-4">
+                                        <button type="button" onclick="showTerimaModal('/penerimaan/${kiriman.id}/terima')" class="flex items-center gap-1 text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" title="Terima">
+                                            <span>Terima</span>
+                                        </button>
+                                        <button type="button" onclick="showTolakModal('/penerimaan/${kiriman.id}/tolak')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Tolak">
+                                            <span>Tolak</span>
+                                        </button>
+                                        ${actions}
+                                    </div>
+                                `;
+                            }
+
+                            row.innerHTML = `
+                                <td class="py-3 px-4 whitespace-nowrap">DIST-${kiriman.id}</td>
+                                <td class="py-3 px-4 whitespace-nowrap">${date}</td>
+                                <td class="py-3 px-4">${kiriman.user ? kiriman.user.name : 'N/A'}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="capitalize px-3 py-1 text-xs font-medium rounded-full ${statusClass}">
+                                        ${kiriman.status}
+                                    </span>
+                                    ${kiriman.status === 'ditolak' && kiriman.alasan_penolakan 
+                                        ? `<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">"${kiriman.alasan_penolakan}"</p>`
+                                        : ''}
+                                </td>
+                                <td class="text-center py-3 px-4">
+                                    <div class="flex justify-center items-center gap-4">
+                                        ${actions}
+                                    </div>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        if (noResultsRow) noResultsRow.style.display = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    tbody.classList.remove('opacity-50');
+                    const errorRow = document.createElement('tr');
+                    errorRow.innerHTML = `
+                        <td colspan="5" class="text-center py-4 text-red-500">
+                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
+                        </td>
+                    `;
+                    tbody.appendChild(errorRow);
+                });
         }
+    });
         // [BARU] Script untuk Modal Terima
         function showTerimaModal(actionUrl) {
             document.getElementById('terimaForm').action = actionUrl;
