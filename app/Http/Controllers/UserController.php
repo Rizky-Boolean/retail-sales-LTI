@@ -16,7 +16,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('cabang')->latest()->paginate(10);
+        $users = User::active()->with('cabang')->latest()->paginate(10);
         return view('users.index', compact('users'));
     }
 
@@ -25,7 +25,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        $cabangs = Cabang::orderBy('nama_cabang')->get();
+        $cabangs = Cabang::active()->orderBy('nama_cabang')->get();
         return view('users.create', compact('cabangs'));
     }
 
@@ -66,7 +66,7 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $cabangs = Cabang::orderBy('nama_cabang')->get();
+        $cabangs = Cabang::active()->orderBy('nama_cabang')->get();
         return view('users.edit', compact('user', 'cabangs'));
     }
 
@@ -102,39 +102,23 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'Data user berhasil diperbarui.');
     }
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(User $user)
+    public function inactive()
     {
-        // Mencegah user menghapus akunnya sendiri
+        $users = User::where('is_active', false)->latest()->paginate(10);
+        return view('users.inactive', compact('users'));
+    }
+
+    /**
+     * [BARU] Mengubah status aktif/nonaktif.
+     */
+    public function toggleStatus(User $user)
+    {
         if ($user->id === auth()->id()) {
-            return redirect()->route('users.index')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+            return redirect()->back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
         }
-
-        $user->delete();
-        return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
-    }
-        public function trash()
-    {
-        $users = User::onlyTrashed()->paginate(10);
-        return view('users.trash', compact('users'));
-    }
-
-    public function restore($id)
-    {
-        $user = User::onlyTrashed()->findOrFail($id);
-        $user->restore();
-        return redirect()->route('users.trash')->with('success', 'Data user berhasil dikembalikan.');
-    }
-
-    /**
-     * [BARU] Menghapus data user secara permanen.
-     */
-    public function forceDelete($id)
-    {
-        $user = User::onlyTrashed()->findOrFail($id);
-        $user->forceDelete();
-        return redirect()->route('users.trash')->with('success', 'Data user berhasil dihapus permanen.');
+        $user->is_active = !$user->is_active;
+        $user->save();
+        $message = $user->is_active ? 'Data user berhasil diaktifkan.' : 'Data user berhasil dinonaktifkan.';
+        return redirect()->back()->with('success', $message);
     }
 }

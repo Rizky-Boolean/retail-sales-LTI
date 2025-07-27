@@ -27,7 +27,7 @@ class StokMasukDetail extends Model
      */
     public function sparepart()
     {
-        return $this->belongsTo(Sparepart::class)->withTrashed();
+        return $this->belongsTo(Sparepart::class);
     }
 
     public function stokMasuk()

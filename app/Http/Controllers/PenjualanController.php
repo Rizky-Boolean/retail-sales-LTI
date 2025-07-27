@@ -23,6 +23,7 @@ class PenjualanController extends Controller
         
         return view('penjualan.index', compact('penjualans'));
     }
+    
     public function search(Request $request)
     {
         try {
@@ -49,8 +50,7 @@ class PenjualanController extends Controller
     public function create()
     {
         $user = Auth::user();
-        $spareparts = $user->cabang->spareparts()->where('stok', '>', 0)->get();
-
+        $spareparts = $user->cabang->spareparts()->where('is_active', true)->where('stok', '>', 0)->get();
         return view('penjualan.create', compact('spareparts'));
     }
 
@@ -150,8 +150,16 @@ class PenjualanController extends Controller
             abort(403);
         }
         
-        $penjualan->load('user', 'cabang', 'details.sparepart');
-        return view('penjualan.show', compact('penjualan'));
+        // PERBAIKAN: Load relasi dengan hati-hati, cek apakah relasi exists
+        $penjualan->load('cabang', 'details.sparepart');
+        
+        // Jika ingin menampilkan data user, ambil langsung dari user_id
+        $user = null;
+        if ($penjualan->user_id) {
+            $user = \App\Models\User::find($penjualan->user_id);
+        }
+        
+        return view('penjualan.show', compact('penjualan', 'user'));
     }
 
     /**

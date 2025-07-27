@@ -36,7 +36,7 @@ class StokMasuk extends Model
     public function user()
     {
         // Juga sertakan user yang sudah di-soft delete saat mencari relasi
-        return $this->belongsTo(User::class)->withTrashed();
+        return $this->belongsTo(User::class);
     }
 
     // Relasi ke Detail

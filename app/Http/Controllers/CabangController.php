@@ -21,7 +21,7 @@ class CabangController extends Controller
     
     public function index()
     {
-        $cabangs = Cabang::latest()->paginate(10);
+        $cabangs = Cabang::active()->latest()->paginate(10);
         return view('cabangs.index', compact('cabangs'));
     }
 
@@ -64,46 +64,23 @@ class CabangController extends Controller
 
         return redirect()->route('cabangs.index')->with('success', 'Data cabang berhasil diperbarui.');
     }
-
-    public function destroy(Cabang $cabang)
+    public function inactive()
     {
-        if ($cabang->users()->exists()) {
-            return redirect()->route('cabangs.index')->with('error', 'Gagal menghapus! Masih ada user yang terdaftar di cabang ini.');
-        }
-        if ($cabang->distribusis()->exists()) {
-            return redirect()->route('cabangs.index')->with('error', 'Gagal menghapus! Cabang ini memiliki riwayat transaksi distribusi.');
-        }
-        if ($cabang->penjualans()->exists()) {
-            return redirect()->route('cabangs.index')->with('error', 'Gagal menghapus! Cabang ini memiliki riwayat transaksi penjualan.');
-        }
-        
-        try {
-            $cabang->delete();
-            return redirect()->route('cabangs.index')->with('success', 'Cabang berhasil dihapus.');
-        } catch (\Exception $e) {
-            return redirect()->route('cabangs.index')->with('error', 'Terjadi kesalahan saat menghapus cabang.');
-        }
-    }
-    
-    public function trash()
-    {
-        $cabangs = Cabang::onlyTrashed()->paginate(10);
-        return view('cabangs.trash', compact('cabangs'));
+        $cabangs = Cabang::where('is_active', false)->latest()->paginate(10);
+        return view('cabangs.inactive', compact('cabangs'));
     }
 
-    public function restore($id)
+    /**
+     * [BARU] Mengubah status aktif/nonaktif.
+     */
+    public function toggleStatus(Cabang $cabang)
     {
-        $cabang = Cabang::onlyTrashed()->findOrFail($id);
-        $cabang->restore();
-        return redirect()->route('cabangs.trash')->with('success', 'Data cabang berhasil dikembalikan.');
+        $cabang->is_active = !$cabang->is_active;
+        $cabang->save();
+        $message = $cabang->is_active ? 'Data cabang berhasil diaktifkan.' : 'Data cabang berhasil dinonaktifkan.';
+        return redirect()->back()->with('success', $message);
     }
 
-    public function forceDelete($id)
-    {
-        $cabang = Cabang::onlyTrashed()->findOrFail($id);
-        $cabang->forceDelete();
-        return redirect()->route('cabangs.trash')->with('success', 'Data cabang berhasil dihapus permanen.');
-    }
 
     // =================================================================
     // METHOD UNTUK FITUR ADMIN GUDANG CABANG

@@ -5,11 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\LogsActivity;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sparepart extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -26,10 +25,15 @@ class Sparepart extends Model
     'harga_modal_terakhir',
     'harga_beli_terakhir',
     'stok_induk',
+    'is_active',
     ];
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     public function cabangs()
     {
-    return $this->belongsToMany(Cabang::class, 'cabang_sparepart')->withPivot('stok');
+        return $this->belongsToMany(Cabang::class, 'cabang_sparepart')->withPivot('stok');
     }
 }

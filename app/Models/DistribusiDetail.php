@@ -22,8 +22,7 @@ class DistribusiDetail extends Model
      */
     public function sparepart()
     {
-        // Tambahkan withTrashed() di sini
-        return $this->belongsTo(Sparepart::class)->withTrashed();
+        return $this->belongsTo(Sparepart::class);
     }
 
     /**

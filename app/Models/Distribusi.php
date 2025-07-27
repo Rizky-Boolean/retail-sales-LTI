@@ -18,7 +18,7 @@ class Distribusi extends Model
     public function user()
     {
         // Juga sertakan user yang sudah di-soft delete saat mencari relasi
-        return $this->belongsTo(User::class)->withTrashed();
+        return $this->belongsTo(User::class);
     }
     public function details() { return $this->hasMany(DistribusiDetail::class); }
 }

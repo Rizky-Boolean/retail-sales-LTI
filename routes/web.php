@@ -50,11 +50,10 @@ Route::middleware('auth')->group(function () {
 
     // Grup Rute HANYA untuk Super Admin
     Route::middleware(['role:super_admin'])->group(function () {
-        
-        // Sparepart Trash Routes
-        Route::get('spareparts/trash', [SparepartController::class, 'trash'])->name('spareparts.trash');
-        Route::patch('spareparts/{id}/restore', [SparepartController::class, 'restore'])->name('spareparts.restore');
-        Route::delete('spareparts/{id}/force-delete', [SparepartController::class, 'forceDelete'])->name('spareparts.forceDelete');
+
+
+        Route::get('spareparts/inactive', [SparepartController::class, 'inactive'])->name('spareparts.inactive');
+        Route::patch('spareparts/{sparepart}/toggle-status', [SparepartController::class, 'toggleStatus'])->name('spareparts.toggleStatus');
         
         // Rute untuk Fitur Import Sparepart
         Route::get('/spareparts/import', [App\Http\Controllers\SparepartImportController::class, 'show'])->name('spareparts.import.show');
@@ -64,23 +63,18 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('spareparts', SparepartController::class);
 
-        // Supplier Trash Routes
         Route::get('/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
-        Route::get('/suppliers/trash', [SupplierController::class, 'trash'])->name('suppliers.trash');
-        Route::patch('/suppliers/{id}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore');
-        Route::delete('/suppliers/{id}/force-delete', [SupplierController::class, 'forceDelete'])->name('suppliers.forceDelete');
+        Route::get('suppliers/inactive', [SupplierController::class, 'inactive'])->name('suppliers.inactive');
+        Route::patch('suppliers/{supplier}/toggle-status', [SupplierController::class, 'toggleStatus'])->name('suppliers.toggleStatus');
+        
         Route::resource('suppliers', SupplierController::class);
 
-        // User Trash Routes
-        Route::get('users/trash', [UserController::class, 'trash'])->name('users.trash');
-        Route::patch('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
-        Route::delete('users/{id}/force-delete', [UserController::class, 'forceDelete'])->name('users.forceDelete');
+        Route::get('users/inactive', [UserController::class, 'inactive'])->name('users.inactive');
+        Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
         Route::resource('users', UserController::class);
 
-        // Cabang Trash Routes
-        Route::get('cabangs/trash', [CabangController::class, 'trash'])->name('cabangs.trash');
-        Route::patch('cabangs/{id}/restore', [CabangController::class, 'restore'])->name('cabangs.restore');
-        Route::delete('cabangs/{id}/force-delete', [CabangController::class, 'forceDelete'])->name('cabangs.forceDelete');
+        Route::get('cabangs/inactive', [CabangController::class, 'inactive'])->name('cabangs.inactive');
+        Route::patch('cabangs/{cabang}/toggle-status', [CabangController::class, 'toggleStatus'])->name('cabangs.toggleStatus');
         Route::resource('cabangs', CabangController::class);
 
         // Rute Transaksi & Laporan Super Admin

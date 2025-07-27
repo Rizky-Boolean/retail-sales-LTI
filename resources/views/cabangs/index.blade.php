@@ -28,16 +28,11 @@
                             </svg>
                             Tambah Cabang
                         </a>
-                        
-                        {{-- Tombol Lihat Data Terhapus --}}
-                        <a href="{{ route('cabangs.trash') }}"
-                            class="inline-flex items-center justify-center px-5 py-2.5 text-base font-semibold rounded-lg shadow-md bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all duration-150 ease-in-out">
-                            <svg class="w-5 h-5 mr-2 -ml-1" fill="none" stroke="currentColor" stroke-width="2"
-                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a2 2 0 012 2v2H7V5a2 2 0 012-2zm-2 6h8"></path>
-                            </svg>
-                            Lihat Data Terhapus
+                        {{-- Tombol Lihat Cabang Tidak Aktif --}}
+                        <a href="{{ route('cabangs.inactive') }}"
+                           class="inline-flex items-center px-5 py-2.5 text-base font-semibold rounded-lg shadow-md bg-gray-600 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all duration-150 ease-in-out">
+                            <svg class="w-5 h-5 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639l4.316-4.316a1.012 1.012 0 0 1 1.415 0l4.316 4.316a1.012 1.012 0 0 1 0 .639l-4.316 4.316a1.012 1.012 0 0 1-1.415 0l-4.316-4.316ZM12.322 2.036a1.012 1.012 0 0 1 .639 0l4.316 4.316a1.012 1.012 0 0 1 0 1.415l-4.316 4.316a1.012 1.012 0 0 1-.639 0l-4.316-4.316a1.012 1.012 0 0 1 0-1.415l4.316-4.316Z" /></svg>
+                            Lihat Data Nonaktif
                         </a>
                     </div>
                 </div>
@@ -61,10 +56,14 @@
                                     <td class="py-3 px-4">{{ $cabang->nama_cabang }}</td>
                                     <td class="py-3 px-4">{{ $cabang->alamat }}</td>
                                     <td class="py-3 px-4 text-center">
-                                        <div class="flex justify-center gap-2">
-                                            <a href="{{ route('cabangs.edit', $cabang->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Edit</a>
-                                            <button type="button" onclick="showDeleteModal({{ $cabang->id }})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 py-1 px-2 rounded">Hapus</button>
-                                        </div>
+                                        <a href="{{ route('cabangs.edit', $cabang) }}" class="text-blue-600 ...">Edit</a>
+                                        <form action="{{ route('cabangs.toggleStatus', $cabang) }}" method="POST" class="inline-block ml-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-red-600 ..." onclick="return confirm('Anda yakin ingin menonaktifkan data ini?')">
+                                                Nonaktifkan
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty
@@ -83,36 +82,11 @@
                 <div class="mt-6">
                     {{ $cabangs->links() }}
                 </div>
-
             </div>
         </div>
     </div>
 
-    {{-- Modal Konfirmasi Hapus --}}
-    <div id="deleteModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto border border-gray-200 dark:border-gray-700">
-            <div class="text-center">
-                <svg class="mx-auto mb-4 h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <h3 class="mb-5 text-lg font-normal text-gray-800 dark:text-gray-300">Apakah Anda yakin ingin menghapus data ini?</h3>
-                <div class="flex justify-center gap-4">
-                    <button type="button" onclick="hideDeleteModal()" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600 transition">
-                        Batal
-                    </button>
-                    <form id="deleteForm" method="POST" action="" class="inline-block">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
-                            Hapus
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Script untuk Search dan Delete Modal --}}
+    {{-- Script untuk Search --}}
     <script>
         function filterTable() {
             let input = document.getElementById("searchInput");
@@ -139,16 +113,6 @@
 
             if (noResultsRow) noResultsRow.style.display = foundResults || filter === "" ? "none" : "";
             if (initialEmptyRow) initialEmptyRow.style.display = filter !== "" ? "none" : (tr.length > 2 ? "" : "none");
-        }
-
-        function showDeleteModal(id) {
-            const deleteForm = document.getElementById('deleteForm');
-            deleteForm.action = `/cabangs/${id}`;
-            document.getElementById('deleteModal').classList.remove('hidden');
-        }
-
-        function hideDeleteModal() {
-            document.getElementById('deleteModal').classList.add('hidden');
         }
     </script>
 </x-app-layout>

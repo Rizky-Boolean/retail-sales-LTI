@@ -50,7 +50,7 @@
 
                     {{-- Tabel Barang Penjualan --}}
                     <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Detail Barang</h3>
-                    <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                    <div class="rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                             <thead class="bg-gray-200 dark:bg-gray-700">
                                 <tr>
@@ -64,18 +64,49 @@
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 <template x-for="(item, index) in items" :key="index">
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                        <td class="py-2 px-4">
-                                            <select :name="`details[${index}][sparepart_id]`" x-model="item.sparepart_id" @change="updateItemData(index)"
-                                                class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm text-sm" required>
-                                                <option value="">-- Pilih Sparepart --</option>
-                                                <template x-for="sparepart in spareparts" :key="sparepart.id">
-                                                    <option 
-                                                        :value="sparepart.id" 
-                                                        x-text="`${sparepart.nama_part} (Stok: ${sparepart.pivot.stok})`"
-                                                        :disabled="isSparepartSelected(sparepart.id) && item.sparepart_id != sparepart.id">
-                                                    </option>
+                                        <td class="py-2 px-4 relative">
+                                            {{-- Hidden input untuk menyimpan nilai yang dipilih --}}
+                                            <input type="hidden" :name="`details[${index}][sparepart_id]`" x-model="item.sparepart_id">
+                                            
+                                            {{-- Input pencarian --}}
+                                            <input 
+                                                type="text" 
+                                                :value="getSelectedSparepartText(item.sparepart_id)"
+                                                @input="searchSparepart(index, $event.target.value)"
+                                                @focus="showDropdown(index)"
+                                                @blur="hideDropdown(index)"
+                                                placeholder="Ketik untuk mencari atau klik untuk melihat semua..."
+                                                class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm text-sm"
+                                                required>
+                                            
+                                            {{-- Dropdown hasil pencarian --}}
+                                            <div x-show="item.showDropdown" 
+                                                 x-transition
+                                                 class="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-xl max-h-60 overflow-y-auto">
+                                                
+                                                {{-- Opsi kosong --}}
+                                                <div @mousedown.prevent="selectSparepart(index, '')"
+                                                     class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 italic">
+                                                    -- Pilih Sparepart --
+                                                </div>
+                                                
+                                                {{-- Hasil pencarian --}}
+                                                <template x-for="sparepart in getFilteredSpareparts(index)" :key="sparepart.id">
+                                                    <div @mousedown.prevent="selectSparepart(index, sparepart.id)"
+                                                         class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                         :class="{ 'opacity-50 cursor-not-allowed': isSparepartSelected(sparepart.id) && item.sparepart_id != sparepart.id }">
+                                                        <span x-text="`${sparepart.nama_part} (Stok: ${sparepart.pivot.stok})`"></span>
+                                                        <span x-show="isSparepartSelected(sparepart.id) && item.sparepart_id != sparepart.id" 
+                                                              class="text-red-500 text-xs ml-2">(Sudah dipilih)</span>
+                                                    </div>
                                                 </template>
-                                            </select>
+                                                
+                                                {{-- Pesan jika tidak ada hasil --}}
+                                                <div x-show="getFilteredSpareparts(index).length === 0" 
+                                                     class="px-3 py-2 text-gray-500 italic">
+                                                    Tidak ada sparepart yang ditemukan
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="py-2 px-4 text-center">
                                             <input type="number" :name="`details[${index}][qty]`" x-model.number="item.qty"
@@ -101,7 +132,7 @@
                                     </tr>
                                 </template>
                             </tbody>
-                        </table>
+                                                    </table>
                     </div>
                     <div class="mt-4">
                         <button type="button" @click="addItem()"
@@ -144,12 +175,12 @@
         </div>
     </div>
 
-    {{-- Alpine.js Logic --}}
+    {{-- Alpine.js Logic dengan fitur pencarian --}}
     <script>
         function salesForm(spareparts) {
             return {
                 spareparts: spareparts,
-                items: [{ sparepart_id: '', qty: 1, harga_jual: 0 }],
+                items: [{ sparepart_id: '', qty: 1, harga_jual: 0, searchQuery: '', showDropdown: false }],
                 ppnDikenakan: false,
                 total: 0,
                 ppnAmount: 0,
@@ -161,7 +192,7 @@
                 },
 
                 addItem() {
-                    this.items.push({ sparepart_id: '', qty: 1, harga_jual: 0 });
+                    this.items.push({ sparepart_id: '', qty: 1, harga_jual: 0, searchQuery: '', showDropdown: false });
                 },
                 
                 removeItem(index) {
@@ -182,6 +213,71 @@
                     const selectedSparepart = this.spareparts.find(s => s.id == selectedId);
                     this.items[index].harga_jual = selectedSparepart ? selectedSparepart.harga_jual : 0;
                     this.calculateTotals();
+                },
+
+                // Fungsi untuk menampilkan teks sparepart yang dipilih
+                getSelectedSparepartText(sparepartId) {
+                    if (!sparepartId) return '';
+                    const sparepart = this.spareparts.find(s => s.id == sparepartId);
+                    return sparepart ? `${sparepart.nama_part} (Stok: ${sparepart.pivot.stok})` : '';
+                },
+
+                // Fungsi untuk pencarian sparepart
+                searchSparepart(index, query) {
+                    this.items[index].searchQuery = query;
+                    this.items[index].showDropdown = true;
+                    
+                    // Jika input kosong, reset pilihan
+                    if (!query.trim()) {
+                        this.items[index].sparepart_id = '';
+                        this.items[index].harga_jual = 0;
+                        this.calculateTotals();
+                    }
+                },
+
+                // Fungsi untuk mendapatkan sparepart yang difilter berdasarkan pencarian
+                getFilteredSpareparts(index) {
+                    const query = this.items[index].searchQuery || '';
+                    if (!query.trim()) {
+                        return this.spareparts;
+                    }
+                    
+                    return this.spareparts.filter(sparepart => {
+                        const searchText = `${sparepart.nama_part}`.toLowerCase();
+                        return searchText.includes(query.toLowerCase());
+                    });
+                },
+
+                // Fungsi untuk menampilkan dropdown
+                showDropdown(index) {
+                    this.items[index].showDropdown = true;
+                    // Reset query pencarian untuk menampilkan semua item
+                    if (!this.items[index].sparepart_id) {
+                        this.items[index].searchQuery = '';
+                    }
+                },
+
+                // Fungsi untuk menyembunyikan dropdown
+                hideDropdown(index) {
+                    // Delay untuk memungkinkan klik pada item dropdown
+                    setTimeout(() => {
+                        this.items[index].showDropdown = false;
+                    }, 200);
+                },
+
+                // Fungsi untuk memilih sparepart
+                selectSparepart(index, sparepartId) {
+                    // Cek apakah sparepart sudah dipilih di baris lain
+                    if (sparepartId && this.isSparepartSelected(sparepartId) && this.items[index].sparepart_id != sparepartId) {
+                        return; // Tidak bisa memilih sparepart yang sudah dipilih
+                    }
+                    
+                    this.items[index].sparepart_id = sparepartId;
+                    this.items[index].searchQuery = '';
+                    this.items[index].showDropdown = false;
+                    
+                    // Update data item setelah memilih
+                    this.updateItemData(index);
                 },
                 
                 isSparepartSelected(sparepartId) {

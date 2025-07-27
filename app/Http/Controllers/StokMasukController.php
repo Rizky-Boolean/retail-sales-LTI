@@ -42,8 +42,8 @@ class StokMasukController extends Controller
 
     public function create()
     {
-        $suppliers = Supplier::orderBy('nama_supplier')->get();
-        $spareparts = Sparepart::orderBy('nama_part')->get();
+        $suppliers = Supplier::active()->orderBy('nama_supplier')->get();
+        $spareparts = Sparepart::active()->orderBy('nama_part')->get();
         return view('stok-masuk.create', compact('suppliers', 'spareparts'));
     }
 

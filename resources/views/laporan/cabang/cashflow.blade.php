@@ -17,7 +17,6 @@
                     </a>
                     <button id="export-pdf-btn"
                             class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-base font-medium text-white bg-red-600 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                        <i data-lucide="file-down" class="w-4 h-4"></i>
                         Export PDF
                     </button>
                 </div>

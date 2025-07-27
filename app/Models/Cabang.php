@@ -5,11 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\LogsActivity;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cabang extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -20,7 +19,12 @@ class Cabang extends Model
         'nama_cabang',
         'alamat',
         'kontak',
+        'is_active',
     ];
+        public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     public function spareparts()
     {

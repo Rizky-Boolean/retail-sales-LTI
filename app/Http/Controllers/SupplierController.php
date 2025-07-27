@@ -12,10 +12,7 @@ class SupplierController extends Controller
      */
     public function index()
     {
-        // Ambil data supplier terbaru, 10 data per halaman
-        $suppliers = Supplier::latest()->paginate(10);
-        
-        // Kembalikan view 'suppliers.index' dan kirim data suppliers
+        $suppliers = Supplier::active()->latest()->paginate(10);
         return view('suppliers.index', compact('suppliers'));
     }
     public function search(Request $request)
@@ -62,7 +59,6 @@ class SupplierController extends Controller
      */
     public function show(Supplier $supplier)
     {
-        // Biasanya untuk halaman detail, kita bisa redirect ke edit saja
         return redirect()->route('suppliers.edit', $supplier->id);
     }
 
@@ -71,7 +67,6 @@ class SupplierController extends Controller
      */
     public function edit(Supplier $supplier)
     {
-        // Tampilkan view 'suppliers.edit' dan kirim data supplier yang akan diedit
         return view('suppliers.edit', compact('supplier'));
     }
 
@@ -80,7 +75,6 @@ class SupplierController extends Controller
      */
     public function update(Request $request, Supplier $supplier)
     {
-        // [UBAH] Tambahkan aturan regex untuk validasi kontak
         $validated = $request->validate([
             'nama_supplier' => 'required|string|max:255',
             'alamat' => 'nullable|string',
@@ -93,52 +87,20 @@ class SupplierController extends Controller
 
         return redirect()->route('suppliers.index')->with('success', 'Data supplier berhasil diperbarui!');
     }
-    /**
-     * Menghapus data supplier dari database.
-     */
-    public function destroy(Supplier $supplier)
+    public function inactive()
     {
-        // Cek apakah supplier ini punya relasi dengan stok_masuks
-        if ($supplier->stokMasuks()->exists()) {
-            return redirect()->route('suppliers.index')
-                           ->with('error', 'Gagal menghapus! Supplier ini sudah memiliki riwayat transaksi stok masuk.');
-        }
-
-        try {
-            $supplier->delete();
-            return redirect()->route('suppliers.index')
-                           ->with('success', 'Supplier berhasil dihapus.');
-        } catch (\Exception $e) {
-            return redirect()->route('suppliers.index')
-                           ->with('error', 'Terjadi kesalahan saat menghapus supplier.');
-        }
-    }
-    /**
-     * [BARU] Menampilkan daftar supplier yang sudah di-soft delete.
-     */
-    public function trash()
-    {
-        $suppliers = Supplier::onlyTrashed()->paginate(10);
-        return view('suppliers.trash', compact('suppliers'));
+        $suppliers = Supplier::where('is_active', false)->latest()->paginate(10);
+        return view('suppliers.inactive', compact('suppliers'));
     }
 
     /**
-     * [BARU] Mengembalikan data supplier dari trash.
+     * [BARU] Mengubah status aktif/nonaktif.
      */
-    public function restore($id)
+    public function toggleStatus(Supplier $supplier)
     {
-        $supplier = Supplier::onlyTrashed()->findOrFail($id);
-        $supplier->restore();
-        return redirect()->route('suppliers.trash')->with('success', 'Data supplier berhasil dikembalikan.');
-    }
-
-    /**
-     * [BARU] Menghapus data supplier secara permanen.
-     */
-    public function forceDelete($id)
-    {
-        $supplier = Supplier::onlyTrashed()->findOrFail($id);
-        $supplier->forceDelete();
-        return redirect()->route('suppliers.trash')->with('success', 'Data supplier berhasil dihapus permanen.');
+        $supplier->is_active = !$supplier->is_active;
+        $supplier->save();
+        $message = $supplier->is_active ? 'Data supplier berhasil diaktifkan.' : 'Data supplier berhasil dinonaktifkan.';
+        return redirect()->back()->with('success', $message);
     }
 }

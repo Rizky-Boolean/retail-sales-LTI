@@ -54,7 +54,6 @@
                 {{-- Tombol Kanan --}}
                 <div class="flex items-center">
                     <button onclick="window.print()" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-base font-medium text-white bg-gray-600 rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                        <i data-lucide="printer" class="w-4 h-4"></i>
                         <span>Cetak Nota</span>
                     </button>
                 </div>

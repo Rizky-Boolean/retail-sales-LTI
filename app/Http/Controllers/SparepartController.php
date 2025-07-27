@@ -15,7 +15,7 @@ class SparepartController extends Controller
      */
     public function index()
     {
-        $spareparts = Sparepart::latest()->paginate(10);
+        $spareparts = Sparepart::active()->latest()->paginate(10);
         return view('spareparts.index', compact('spareparts'));
     }
         public function search(Request $request)
@@ -103,47 +103,20 @@ class SparepartController extends Controller
         // 5. Redirect ke halaman index dengan pesan sukses
         return redirect()->route('spareparts.index')->with('success', 'Markup & Harga Jual berhasil diperbarui!');
     }
-
-    /**
-     * Menghapus data sparepart dari database.
-     */
-    public function destroy(Sparepart $sparepart)
+    public function inactive()
     {
-        $sparepart->delete();
-        return redirect()->route('spareparts.index')->with('success', 'Data sparepart berhasil dihapus!');
-    }
-
-    public function show(Sparepart $sparepart)
-    {
-        return redirect()->route('spareparts.edit', $sparepart);
+        $spareparts = Sparepart::where('is_active', false)->paginate(10);
+        return view('spareparts.inactive', compact('spareparts'));
     }
 
     /**
-     * [BARU] Menampilkan daftar sparepart yang sudah di-soft delete.
+     * [BARU] Mengubah status aktif/nonaktif.
      */
-    public function trash()
+    public function toggleStatus(Sparepart $sparepart)
     {
-        $spareparts = Sparepart::onlyTrashed()->paginate(10);
-        return view('spareparts.trash', compact('spareparts'));
-    }
-
-    /**
-     * [BARU] Mengembalikan data sparepart dari trash.
-     */
-    public function restore($id)
-    {
-        $sparepart = Sparepart::onlyTrashed()->findOrFail($id);
-        $sparepart->restore();
-        return redirect()->route('spareparts.trash')->with('success', 'Data sparepart berhasil dikembalikan.');
-    }
-
-    /**
-     * [BARU] Menghapus data sparepart secara permanen.
-     */
-    public function forceDelete($id)
-    {
-        $sparepart = Sparepart::onlyTrashed()->findOrFail($id);
-        $sparepart->forceDelete();
-        return redirect()->route('spareparts.trash')->with('success', 'Data sparepart berhasil dihapus permanen.');
+        $sparepart->is_active = !$sparepart->is_active;
+        $sparepart->save();
+        $message = $sparepart->is_active ? 'Data berhasil diaktifkan.' : 'Data berhasil dinonaktifkan.';
+        return redirect()->back()->with('success', $message);
     }
 }

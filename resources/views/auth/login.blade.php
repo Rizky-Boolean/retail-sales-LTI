@@ -79,14 +79,6 @@
         </div>
         </div>
 
-        <div class="flex items-center mt-4">
-            <input id="remember_me" type="checkbox" name="remember"
-                class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500 dark:bg-gray-900 dark:border-gray-700">
-            <label for="remember_me" class="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                Remember me
-            </label>
-        </div>
-
         <button 
         type="submit" 
         class="w-full py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-semibold transition duration-300">

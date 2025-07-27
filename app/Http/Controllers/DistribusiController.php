@@ -77,8 +77,8 @@ class DistribusiController extends Controller
      */
     public function create()
     {
-        $cabangs = \App\Models\Cabang::orderBy('nama_cabang')->get();
-        $spareparts = \App\Models\Sparepart::where('stok_induk', '>', 0)->orderBy('nama_part')->get();
+        $cabangs = Cabang::active()->orderBy('nama_cabang')->get();
+        $spareparts = Sparepart::active()->where('stok_induk', '>', 0)->orderBy('nama_part')->get();
         return view('distribusi.create', compact('cabangs', 'spareparts'));
     }
 
