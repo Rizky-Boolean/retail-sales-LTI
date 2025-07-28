@@ -27,8 +27,7 @@
                 {{-- Alert jika ada --}}
                 @include('partials.alert-messages')
 
-                {{-- Tabel Stok --}}
-                <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <table id="stokTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-200 dark:bg-gray-700">
                             <tr>
@@ -41,7 +40,7 @@
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
                             @forelse($spareparts as $sparepart)
-                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row">
                                     <td class="py-3 px-4 whitespace-nowrap">{{ $sparepart->kode_part }}</td>
                                     <td class="py-3 px-4">{{ $sparepart->nama_part }}</td>
                                     <td class="py-3 px-4 whitespace-nowrap">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
@@ -69,12 +68,15 @@
                                     </td>
                                 </tr>
                             @endforelse
+                             <tr id="noResultsRow" style="display: none;">
+                                <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada sparepart yang cocok.</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
 
                 {{-- Pagination --}}
-                <div class="mt-6">
+                <div class="mt-6 pagination-container">
                     {{ $spareparts->links() }}
                 </div>
             </div>
@@ -86,6 +88,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
         const tbody = document.querySelector('#stokTable tbody');
+        const paginationContainer = document.querySelector('.pagination-container');
         let typingTimer;
         const doneTypingInterval = 300;
 
@@ -97,8 +100,18 @@
         function performSearch() {
             const searchValue = searchInput.value;
             const noResultsRow = document.getElementById('noResultsRow');
+            const initialEmptyRow = document.getElementById('initialEmptyRow');
+
+            // [UBAH] Ganti route() dengan window.location.reload()
+            if (searchValue.trim() === '') {
+                window.location.reload();
+                return;
+            }
+
+            if (paginationContainer) {
+                paginationContainer.style.display = 'none';
+            }
             
-            // Show loading state
             tbody.classList.add('opacity-50');
 
             fetch(`/stok-cabang/search?search=${encodeURIComponent(searchValue)}`)
@@ -109,19 +122,19 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Remove loading state
                     tbody.classList.remove('opacity-50');
 
-                    // Clear existing rows except special rows
-                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow):not(#initialEmptyRow)');
-                    rows.forEach(row => row.remove());
+                    const dataRows = tbody.querySelectorAll('tr.data-row');
+                    dataRows.forEach(row => row.remove());
+                    
+                    if(initialEmptyRow) initialEmptyRow.style.display = 'none';
 
-                    if (data.length > 0) {
+                    if (Array.isArray(data) && data.length > 0) {
                         if (noResultsRow) noResultsRow.style.display = 'none';
 
                         data.forEach(sparepart => {
                             const row = document.createElement('tr');
-                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row';
 
                             let statusBadge = '';
                             if (sparepart.pivot.stok <= 0) {
@@ -139,7 +152,7 @@
                                 <td class="py-3 px-4 text-center">${sparepart.pivot.stok}</td>
                                 <td class="py-3 px-4 text-center">${statusBadge}</td>
                             `;
-                            tbody.appendChild(row);
+                            tbody.insertBefore(row, noResultsRow);
                         });
                     } else {
                         if (noResultsRow) noResultsRow.style.display = '';
@@ -148,15 +161,33 @@
                 .catch(error => {
                     console.error('Search error:', error);
                     tbody.classList.remove('opacity-50');
-                    const errorRow = document.createElement('tr');
-                    errorRow.innerHTML = `
-                        <td colspan="5" class="text-center py-4 text-red-500">
-                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
-                        </td>
-                    `;
-                    tbody.appendChild(errorRow);
+                    const dataRows = tbody.querySelectorAll('tr.data-row');
+                    dataRows.forEach(row => row.remove());
+                    noResultsRow.innerHTML = `<td colspan="5" class="text-center py-4 text-red-500">Terjadi kesalahan saat mencari data.</td>`;
+                    noResultsRow.style.display = '';
                 });
         }
     });
     </script>
+
+    {{-- Gaya Kustom untuk Paginasi --}}
+    <style>
+        .pagination-container span[aria-current="page"] span {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+            font-weight: 600;
+        }
+        .dark .pagination-container span[aria-current="page"] span {
+            background-color: #60a5fa !important;
+            color: #1f2937 !important;
+            border-color: #60a5fa !important;
+        }
+        .pagination-container a:hover {
+            background-color: #f3f4f6;
+        }
+        .dark .pagination-container a:hover {
+            background-color: #374151;
+        }
+    </style>
 </x-app-layout>

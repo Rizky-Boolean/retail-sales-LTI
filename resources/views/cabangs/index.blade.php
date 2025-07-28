@@ -56,14 +56,15 @@
                                     <td class="py-3 px-4">{{ $cabang->nama_cabang }}</td>
                                     <td class="py-3 px-4">{{ $cabang->alamat }}</td>
                                     <td class="py-3 px-4 text-center">
-                                        <a href="{{ route('cabangs.edit', $cabang) }}" class="text-blue-600 ...">Edit</a>
-                                        <form action="{{ route('cabangs.toggleStatus', $cabang) }}" method="POST" class="inline-block ml-2">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="text-red-600 ..." onclick="return confirm('Anda yakin ingin menonaktifkan data ini?')">
-                                                Nonaktifkan
+                                       {{-- [UBAH] Tombol Aksi diperbarui --}}
+                                        <div class="flex justify-center items-center gap-4">
+                                            <a href="{{ route('cabangs.edit', $cabang) }}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
+                                                <i data-lucide="edit" class="w-4 h-4"></i><span>Edit</span>
+                                            </a>
+                                            <button type="button" onclick="showDeactivateModal('{{ route('cabangs.toggleStatus', $cabang) }}', '{{ addslashes($cabang->nama_cabang) }}')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Nonaktifkan">
+                                                <i data-lucide="power-off" class="w-4 h-4"></i><span>Nonaktifkan</span>
                                             </button>
-                                        </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -81,6 +82,28 @@
                 {{-- Pagination --}}
                 <div class="mt-6">
                     {{ $cabangs->links() }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- [TAMBAH] Modal Konfirmasi --}}
+    <div id="deactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto">
+            <div class="text-center">
+                <svg class="mx-auto mb-4 h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <h3 id="deactivateModalTitle" class="mb-5 text-lg font-normal text-gray-800 dark:text-gray-300"></h3>
+                <div class="flex justify-center space-x-4">
+                    <button type="button" onclick="hideDeactivateModal()" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">
+                        Batal
+                    </button>
+                    <form id="deactivateForm" method="POST" action="">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+                            Ya, Nonaktifkan
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -113,6 +136,21 @@
 
             if (noResultsRow) noResultsRow.style.display = foundResults || filter === "" ? "none" : "";
             if (initialEmptyRow) initialEmptyRow.style.display = filter !== "" ? "none" : (tr.length > 2 ? "" : "none");
+        }
+
+        // [TAMBAH] Script untuk Modal
+        const deactivateModal = document.getElementById('deactivateModal');
+        const deactivateForm = document.getElementById('deactivateForm');
+        const deactivateModalTitle = document.getElementById('deactivateModalTitle');
+
+        function showDeactivateModal(actionUrl, branchName) {
+            deactivateForm.action = actionUrl;
+            deactivateModalTitle.innerHTML = `Anda yakin ingin menonaktifkan "<strong>${branchName}</strong>"?`;
+            deactivateModal.classList.remove('hidden');
+        }
+
+        function hideDeactivateModal() {
+            deactivateModal.classList.add('hidden');
         }
     </script>
 </x-app-layout>
