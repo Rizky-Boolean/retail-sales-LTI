@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
 
 class LoginRequest extends FormRequest
 {
@@ -48,6 +49,18 @@ class LoginRequest extends FormRequest
                 'email' => trans('auth.failed'),
             ]);
         }
+        $user = Auth::user();
+
+        /** @var \App\Models\User $user */ // Memberi petunjuk tipe data ke editor
+        if (! $user->is_active) {
+            // Jika user tidak aktif, langsung logout dan kirim error
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun Anda telah dinonaktifkan. Silakan hubungi Super Admin.',
+            ]);
+        }
+        // [END] PENAMBAHAN LOGIKA PENGECEKAN STATUS AKTIF
 
         RateLimiter::clear($this->throttleKey());
     }

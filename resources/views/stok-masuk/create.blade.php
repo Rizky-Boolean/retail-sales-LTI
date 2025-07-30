@@ -16,7 +16,7 @@
                     @endif
 
                     <form action="{{ route('stok-masuk.store') }}" method="POST"
-                          x-data="itemDetails({{ json_encode($spareparts) }}, {{ json_encode(old('details', [['sparepart_id' => '', 'qty' => 1, 'harga_beli_satuan' => 0]])) }})"
+                          x-data="itemDetails({{ json_encode($spareparts) }}, {{ json_encode($suppliers) }}, {{ json_encode(old('details', [['sparepart_id' => '', 'qty' => 1, 'harga_beli_satuan' => 0]])) }})"
                           x-init="init()">
                         @csrf
                         {{-- Header Form --}}
@@ -28,18 +28,50 @@
                                     :value="old('tanggal_masuk', date('Y-m-d'))" max="{{ date('Y-m-d') }}" required />
                                 <x-input-error class="mt-2" :messages="$errors->get('tanggal_masuk')" />
                             </div>
-                            <div>
+                            {{-- [MODIFIKASI] Ubah dropdown supplier menjadi searchable dropdown --}}
+                            <div class="relative">
                                 <x-input-label for="supplier_id" :value="__('Supplier')" />
-                                <select id="supplier_id" name="supplier_id"
+                                
+                                {{-- Hidden input untuk menyimpan nilai yang dipilih --}}
+                                <input type="hidden" name="supplier_id" x-model="selectedSupplierId">
+                                
+                                {{-- Input pencarian --}}
+                                <input 
+                                    type="text" 
+                                    :value="getSelectedSupplierText()"
+                                    @input="searchSupplier($event.target.value)"
+                                    @focus="showSupplierDropdown = true"
+                                    @blur="hideSupplierDropdown()"
+                                    placeholder="Ketik untuk mencari supplier atau klik untuk melihat semua..."
                                     class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     required>
-                                    <option value="">-- Pilih Supplier --</option>
-                                    @foreach($suppliers as $supplier)
-                                        <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
-                                            {{ $supplier->nama_supplier }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                
+                                {{-- Dropdown hasil pencarian supplier --}}
+                                <div x-show="showSupplierDropdown" 
+                                     x-transition
+                                     class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    
+                                    {{-- Opsi kosong --}}
+                                    <div @mousedown.prevent="selectSupplier('')"
+                                         class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 italic">
+                                        -- Pilih Supplier --
+                                    </div>
+                                    
+                                    {{-- Hasil pencarian --}}
+                                    <template x-for="supplier in getFilteredSuppliers()" :key="supplier.id">
+                                        <div @mousedown.prevent="selectSupplier(supplier.id)"
+                                             class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            <span x-text="supplier.nama_supplier"></span>
+                                        </div>
+                                    </template>
+                                    
+                                    {{-- Pesan jika tidak ada hasil --}}
+                                    <div x-show="getFilteredSuppliers().length === 0" 
+                                         class="px-3 py-2 text-gray-500 italic">
+                                        Tidak ada supplier yang ditemukan
+                                    </div>
+                                </div>
+                                
                                 <x-input-error class="mt-2" :messages="$errors->get('supplier_id')" />
                             </div>
                         </div>
@@ -113,8 +145,9 @@
                                             <td class="px-4 py-2">
                                                 <input type="number" :name="`details[${index}][harga_beli_satuan]`" x-model.number="detail.harga_beli_satuan"
                                                     @input="calculateTotals()"
+                                                    @blur="validateHarga(index, detail.harga_beli_satuan)"
                                                     class="w-full text-right border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:ring-indigo-500"
-                                                    min="0" required>
+                                                    min="1000" step="500" placeholder="Min. 1000" required>
                                             </td>
                                             <td class="px-4 py-2">
                                                 <input type="text" :value="formatCurrency(detail.qty * detail.harga_beli_satuan)"
@@ -195,16 +228,21 @@
         </div>
     </div>
 
-    {{-- [MODIFIKASI] Logika Alpine.js diperbarui dengan fitur pencarian --}}
+    {{-- [MODIFIKASI] Logika Alpine.js diperbarui dengan fitur pencarian supplier --}}
     <script>
-        function itemDetails(spareparts, initialDetails) {
+        function itemDetails(spareparts, suppliers, initialDetails) {
             return {
                 spareparts: spareparts,
+                suppliers: suppliers,
                 details: initialDetails.map(detail => ({
                     ...detail,
                     searchQuery: '',
                     showDropdown: false
                 })),
+                // Data untuk supplier dropdown
+                selectedSupplierId: '{{ old("supplier_id") }}',
+                supplierSearchQuery: '',
+                showSupplierDropdown: false,
                 ppnDikenakan: false,
                 totalPembelian: 0,
                 ppn: 0,
@@ -214,7 +252,7 @@
                     this.details.push({ 
                         sparepart_id: '', 
                         qty: 1, 
-                        harga_beli_satuan: 0,
+                        harga_beli_satuan: 1000,
                         searchQuery: '',
                         showDropdown: false 
                     });
@@ -238,6 +276,52 @@
                 isSparepartSelected(sparepartId) {
                     return this.details.some(detail => detail.sparepart_id == sparepartId);
                 },
+                
+                // ===== FUNGSI UNTUK SUPPLIER =====
+                // Fungsi untuk menampilkan teks supplier yang dipilih
+                getSelectedSupplierText() {
+                    if (!this.selectedSupplierId) return '';
+                    const supplier = this.suppliers.find(s => s.id == this.selectedSupplierId);
+                    return supplier ? supplier.nama_supplier : '';
+                },
+                
+                // Fungsi untuk pencarian supplier
+                searchSupplier(query) {
+                    this.supplierSearchQuery = query;
+                    this.showSupplierDropdown = true;
+                    // Jika input kosong, reset pilihan
+                    if (!query.trim()) {
+                        this.selectedSupplierId = '';
+                    }
+                },
+                
+                // Fungsi untuk mendapatkan supplier yang difilter berdasarkan pencarian
+                getFilteredSuppliers() {
+                    const query = this.supplierSearchQuery || '';
+                    if (!query.trim()) {
+                        return this.suppliers;
+                    }
+                    return this.suppliers.filter(supplier => {
+                        return supplier.nama_supplier.toLowerCase().includes(query.toLowerCase());
+                    });
+                },
+                
+                // Fungsi untuk menyembunyikan dropdown supplier
+                hideSupplierDropdown() {
+                    // Delay untuk memungkinkan klik pada item dropdown
+                    setTimeout(() => {
+                        this.showSupplierDropdown = false;
+                    }, 200);
+                },
+                
+                // Fungsi untuk memilih supplier
+                selectSupplier(supplierId) {
+                    this.selectedSupplierId = supplierId;
+                    this.supplierSearchQuery = '';
+                    this.showSupplierDropdown = false;
+                },
+                
+                // ===== FUNGSI UNTUK SPAREPART =====
                 // Fungsi untuk menampilkan teks sparepart yang dipilih
                 getSelectedSparepartText(sparepartId) {
                     if (!sparepartId) return '';
@@ -291,10 +375,12 @@
                     this.details[index].showDropdown = false;
                     // Reset harga jika tidak ada yang dipilih
                     if (!sparepartId) {
-                        this.details[index].harga_beli_satuan = 0;
+                        this.details[index].harga_beli_satuan = 1000;
                     }
                     this.calculateTotals();
                 },
+                
+                // ===== FUNGSI UMUM =====
                 calculateTotals() {
                     this.totalPembelian = this.details.reduce((acc, detail) => {
                         return acc + ((parseFloat(detail.qty) || 0) * (parseFloat(detail.harga_beli_satuan) || 0));
@@ -312,7 +398,14 @@
                     // Juga pantau perubahan pada ceklis
                     this.$watch('details', () => this.calculateTotals(), { deep: true });
                     this.$watch('ppnDikenakan', () => this.calculateTotals());
-                }
+                },
+                validateHarga(index, value) {
+                    if (value < 1000) {
+                        this.details[index].harga_beli_satuan = 1000;
+                        alert('Harga beli satuan minimal Rp 1.000');
+                    }
+                    this.calculateTotals();
+                },
             }
         }
     </script>

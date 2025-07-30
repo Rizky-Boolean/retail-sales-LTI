@@ -23,12 +23,76 @@ class LaporanController extends Controller
     /**
      * Menampilkan laporan stok di Gudang Induk.
      */
-    public function stokInduk()
+    public function stokInduk(Request $request)
     {
-        // Ambil semua sparepart beserta stoknya, diurutkan berdasarkan nama
-        $spareparts = Sparepart::orderBy('nama_part')->get();
-
-        return view('laporan.induk.stok', compact('spareparts'));
+        $search = $request->get('search');
+        $stokFilter = $request->get('stok_filter');
+        
+        // Query builder untuk spareparts yang aktif saja
+        $query = Sparepart::active();
+        
+        // Apply search filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('kode_part', 'LIKE', "%{$search}%")
+                ->orWhere('nama_part', 'LIKE', "%{$search}%");
+            });
+        }
+        
+        // Apply stock filter
+        if ($stokFilter) {
+            switch ($stokFilter) {
+                case 'tersedia':
+                    $query->where('stok_induk', '>', 0);
+                    break;
+                case 'habis':
+                    $query->where('stok_induk', '=', 0);
+                    break;
+                case 'rendah':
+                    $query->where('stok_induk', '<=', 5);
+                    break;
+            }
+        }
+        
+        // Get paginated results
+        $spareparts = $query->orderBy('kode_part')
+                        ->paginate(20);
+        
+        // Preserve search parameters in pagination links
+        $spareparts->appends($request->only(['search', 'stok_filter']));
+        
+        // Calculate statistics for filtered results
+        $statisticsQuery = Sparepart::active();
+        
+        if ($search) {
+            $statisticsQuery->where(function($q) use ($search) {
+                $q->where('kode_part', 'LIKE', "%{$search}%")
+                ->orWhere('nama_part', 'LIKE', "%{$search}%");
+            });
+        }
+        
+        if ($stokFilter) {
+            switch ($stokFilter) {
+                case 'tersedia':
+                    $statisticsQuery->where('stok_induk', '>', 0);
+                    break;
+                case 'habis':
+                    $statisticsQuery->where('stok_induk', '=', 0);
+                    break;
+                case 'rendah':
+                    $statisticsQuery->where('stok_induk', '<=', 5);
+                    break;
+            }
+        }
+        
+        $allData = $statisticsQuery->get();
+        
+        $totalStok = $allData->sum('stok_induk');
+        $totalAsset = $allData->sum(function($item) {
+            return $item->stok_induk * $item->harga_modal_terakhir;
+        });
+        
+        return view('laporan.induk.stok', compact('spareparts', 'totalStok', 'totalAsset', 'search', 'stokFilter'));
     }
 
     /**

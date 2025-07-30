@@ -58,7 +58,12 @@ class StokMasukController extends Controller
             'details' => 'required|array|min:1',
             'details.*.sparepart_id' => 'required|exists:spareparts,id',
             'details.*.qty' => 'required|integer|min:1',
-            'details.*.harga_beli_satuan' => 'required|numeric|min:0',
+            'details.*.harga_beli_satuan' => 'required|numeric|min:1000', // Ubah dari min:0 ke min:1000
+        ], [
+            // Custom error messages
+            'details.*.harga_beli_satuan.min' => 'Harga beli satuan minimal Rp 1.000',
+            'details.*.harga_beli_satuan.required' => 'Harga beli satuan wajib diisi',
+            'details.*.harga_beli_satuan.numeric' => 'Harga beli satuan harus berupa angka',
         ]);
 
         try {

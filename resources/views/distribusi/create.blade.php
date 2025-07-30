@@ -30,7 +30,8 @@
                 @endif
 
                 <form action="{{ route('distribusi.store') }}" method="POST"
-                      x-data="distributionForm({{ json_encode($spareparts) }})">
+                      x-data="distributionForm({{ json_encode($spareparts) }}, {{ json_encode($cabangs) }})"
+                      x-init="init()">
                     @csrf
 
                     {{-- Header Form --}}
@@ -41,14 +42,49 @@
                             <x-text-input id="tanggal_distribusi" name="tanggal_distribusi" type="date" class="mt-1 block w-full" 
                                           :value="old('tanggal_distribusi', date('Y-m-d'))" max="{{ date('Y-m-d') }}" required />
                         </div>
-                        <div>
+                        {{-- [MODIFIKASI] Ubah dropdown cabang menjadi searchable dropdown --}}
+                        <div class="relative">
                             <x-input-label for="cabang_id_tujuan" :value="__('Kirim ke Cabang')" />
-                            <select id="cabang_id_tujuan" name="cabang_id_tujuan" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                <option value="">-- Pilih Cabang Tujuan --</option>
-                                @foreach($cabangs as $cabang)
-                                    <option value="{{ $cabang->id }}" {{ old('cabang_id_tujuan') == $cabang->id ? 'selected' : '' }}>{{ $cabang->nama_cabang }}</option>
-                                @endforeach
-                            </select>
+                            
+                            {{-- Hidden input untuk menyimpan nilai yang dipilih --}}
+                            <input type="hidden" name="cabang_id_tujuan" x-model="selectedCabangId">
+                            
+                            {{-- Input pencarian --}}
+                            <input 
+                                type="text" 
+                                :value="getSelectedCabangText()"
+                                @input="searchCabang($event.target.value)"
+                                @focus="showCabangDropdown = true"
+                                @blur="hideCabangDropdown()"
+                                placeholder="Ketik untuk mencari cabang atau klik untuk melihat semua..."
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                required>
+                            
+                            {{-- Dropdown hasil pencarian cabang --}}
+                            <div x-show="showCabangDropdown" 
+                                 x-transition
+                                 class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                
+                                {{-- Opsi kosong --}}
+                                <div @mousedown.prevent="selectCabang('')"
+                                     class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 italic">
+                                    -- Pilih Cabang Tujuan --
+                                </div>
+                                
+                                {{-- Hasil pencarian --}}
+                                <template x-for="cabang in getFilteredCabangs()" :key="cabang.id">
+                                    <div @mousedown.prevent="selectCabang(cabang.id)"
+                                         class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <span x-text="cabang.nama_cabang"></span>
+                                    </div>
+                                </template>
+                                
+                                {{-- Pesan jika tidak ada hasil --}}
+                                <div x-show="getFilteredCabangs().length === 0" 
+                                     class="px-3 py-2 text-gray-500 italic">
+                                    Tidak ada cabang yang ditemukan
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -70,18 +106,50 @@
                             <tbody>
                                 <template x-for="(item, index) in items" :key="index">
                                     <tr class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                                        <td class="py-3 px-4">
-                                            <select :name="`details[${index}][sparepart_id]`" x-model="item.sparepart_id" @change="updateItemData(index)" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" required>
-                                                <option value="">-- Pilih Sparepart --</option>
-                                                <template x-for="sparepart in spareparts" :key="sparepart.id">
-                                                    {{-- [MODIFIKASI] Tampilkan kode part sebelum nama sparepart --}}
-                                                    <option 
-                                                        :value="sparepart.id" 
-                                                        x-text="`${sparepart.kode_part} - ${sparepart.nama_part}`"
-                                                        :disabled="isSparepartSelected(sparepart.id) && item.sparepart_id != sparepart.id">
-                                                    </option>
+                                        {{-- [MODIFIKASI] Ubah dropdown sparepart menjadi searchable dropdown --}}
+                                        <td class="py-3 px-4 relative">
+                                            {{-- Hidden input untuk menyimpan nilai yang dipilih --}}
+                                            <input type="hidden" :name="`details[${index}][sparepart_id]`" x-model="item.sparepart_id">
+
+                                            {{-- Input pencarian --}}
+                                            <input 
+                                                type="text" 
+                                                :value="getSelectedSparepartText(item.sparepart_id)"
+                                                @input="searchSparepart(index, $event.target.value)"
+                                                @focus="showSparepartDropdown(index)"
+                                                @blur="hideSparepartDropdown(index)"
+                                                placeholder="Ketik untuk mencari atau klik untuk melihat semua..."
+                                                class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                required>
+
+                                            {{-- Dropdown hasil pencarian sparepart --}}
+                                            <div x-show="item.showDropdown" 
+                                                 x-transition
+                                                 class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+
+                                                {{-- Opsi kosong --}}
+                                                <div @mousedown.prevent="selectSparepart(index, '')"
+                                                     class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 italic">
+                                                    -- Pilih Sparepart --
+                                                </div>
+
+                                                {{-- Hasil pencarian --}}
+                                                <template x-for="sparepart in getFilteredSpareparts(index)" :key="sparepart.id">
+                                                    <div @mousedown.prevent="selectSparepart(index, sparepart.id)"
+                                                         class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                         :class="{ 'opacity-50 cursor-not-allowed': isSparepartSelected(sparepart.id) && item.sparepart_id != sparepart.id }">
+                                                        <span x-text="`${sparepart.kode_part} - ${sparepart.nama_part}`"></span>
+                                                        <span x-show="isSparepartSelected(sparepart.id) && item.sparepart_id != sparepart.id" 
+                                                              class="text-red-500 text-xs ml-2">(Sudah dipilih)</span>
+                                                    </div>
                                                 </template>
-                                            </select>
+
+                                                {{-- Pesan jika tidak ada hasil --}}
+                                                <div x-show="getFilteredSpareparts(index).length === 0" 
+                                                     class="px-3 py-2 text-gray-500 italic">
+                                                    Tidak ada sparepart yang ditemukan
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="py-3 px-4">
                                             <input type="text" :value="item.stok_induk" class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded-md shadow-sm" readonly>
@@ -104,7 +172,7 @@
                                                         title="Hapus Baris">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
-                                            </template
+                                            </template>
                                         </td>
                                     </tr>
                                 </template>
@@ -133,15 +201,35 @@
         </div>
     </div>
 
-    {{-- [MODIFIKASI] Logika Alpine.js diperbarui --}}
+    {{-- [MODIFIKASI] Logika Alpine.js diperbarui dengan fitur pencarian --}}
     <script>
-        function distributionForm(spareparts) {
+        function distributionForm(spareparts, cabangs) {
             return {
                 spareparts: spareparts,
-                items: [{ sparepart_id: '', qty: 1, stok_induk: 0, harga_kirim: 0 }],
+                cabangs: cabangs,
+                items: [{ 
+                    sparepart_id: '', 
+                    qty: 1, 
+                    stok_induk: 0, 
+                    harga_kirim: 0,
+                    searchQuery: '',
+                    showDropdown: false
+                }],
+                
+                // Data untuk cabang dropdown
+                selectedCabangId: '{{ old("cabang_id_tujuan") }}',
+                cabangSearchQuery: '',
+                showCabangDropdown: false,
 
                 addItem() {
-                    this.items.push({ sparepart_id: '', qty: 1, stok_induk: 0, harga_kirim: 0 });
+                    this.items.push({ 
+                        sparepart_id: '', 
+                        qty: 1, 
+                        stok_induk: 0, 
+                        harga_kirim: 0,
+                        searchQuery: '',
+                        showDropdown: false
+                    });
                 },
                 
                 removeItem(index) {
@@ -169,6 +257,112 @@
                     return this.items.some(item => item.sparepart_id == sparepartId);
                 },
 
+                // ===== FUNGSI UNTUK CABANG =====
+                // Fungsi untuk menampilkan teks cabang yang dipilih
+                getSelectedCabangText() {
+                    if (!this.selectedCabangId) return '';
+                    const cabang = this.cabangs.find(c => c.id == this.selectedCabangId);
+                    return cabang ? cabang.nama_cabang : '';
+                },
+                
+                // Fungsi untuk pencarian cabang
+                searchCabang(query) {
+                    this.cabangSearchQuery = query;
+                    this.showCabangDropdown = true;
+                    // Jika input kosong, reset pilihan
+                    if (!query.trim()) {
+                        this.selectedCabangId = '';
+                    }
+                },
+                
+                // Fungsi untuk mendapatkan cabang yang difilter berdasarkan pencarian
+                getFilteredCabangs() {
+                    const query = this.cabangSearchQuery || '';
+                    if (!query.trim()) {
+                        return this.cabangs;
+                    }
+                    return this.cabangs.filter(cabang => {
+                        return cabang.nama_cabang.toLowerCase().includes(query.toLowerCase());
+                    });
+                },
+                
+                // Fungsi untuk menyembunyikan dropdown cabang
+                hideCabangDropdown() {
+                    // Delay untuk memungkinkan klik pada item dropdown
+                    setTimeout(() => {
+                        this.showCabangDropdown = false;
+                    }, 200);
+                },
+                
+                // Fungsi untuk memilih cabang
+                selectCabang(cabangId) {
+                    this.selectedCabangId = cabangId;
+                    this.cabangSearchQuery = '';
+                    this.showCabangDropdown = false;
+                },
+
+                // ===== FUNGSI UNTUK SPAREPART =====
+                // Fungsi untuk menampilkan teks sparepart yang dipilih
+                getSelectedSparepartText(sparepartId) {
+                    if (!sparepartId) return '';
+                    const sparepart = this.spareparts.find(s => s.id == sparepartId);
+                    return sparepart ? `${sparepart.kode_part} - ${sparepart.nama_part}` : '';
+                },
+                
+                // Fungsi untuk pencarian sparepart
+                searchSparepart(index, query) {
+                    this.items[index].searchQuery = query;
+                    this.items[index].showDropdown = true;
+                    // Jika input kosong, reset pilihan
+                    if (!query.trim()) {
+                        this.items[index].sparepart_id = '';
+                        this.updateItemData(index);
+                    }
+                },
+                
+                // Fungsi untuk mendapatkan sparepart yang difilter berdasarkan pencarian
+                getFilteredSpareparts(index) {
+                    const query = this.items[index].searchQuery || '';
+                    if (!query.trim()) {
+                        return this.spareparts;
+                    }
+                    return this.spareparts.filter(sparepart => {
+                        const searchText = `${sparepart.kode_part} ${sparepart.nama_part}`.toLowerCase();
+                        return searchText.includes(query.toLowerCase());
+                    });
+                },
+                
+                // Fungsi untuk menampilkan dropdown sparepart
+                showSparepartDropdown(index) {
+                    this.items[index].showDropdown = true;
+                    // Reset query pencarian untuk menampilkan semua item
+                    if (!this.items[index].sparepart_id) {
+                        this.items[index].searchQuery = '';
+                    }
+                },
+                
+                // Fungsi untuk menyembunyikan dropdown sparepart
+                hideSparepartDropdown(index) {
+                    // Delay untuk memungkinkan klik pada item dropdown
+                    setTimeout(() => {
+                        this.items[index].showDropdown = false;
+                    }, 200);
+                },
+                
+                // Fungsi untuk memilih sparepart
+                selectSparepart(index, sparepartId) {
+                    // Cek apakah sparepart sudah dipilih di baris lain
+                    if (sparepartId && this.isSparepartSelected(sparepartId) && this.items[index].sparepart_id != sparepartId) {
+                        return; // Tidak bisa memilih sparepart yang sudah dipilih
+                    }
+                    
+                    this.items[index].sparepart_id = sparepartId;
+                    this.items[index].searchQuery = '';
+                    this.items[index].showDropdown = false;
+                    this.updateItemData(index);
+                },
+
+                // ===== FUNGSI UMUM =====
                 formatCurrency(value) {
                     if (isNaN(value)) return 'Rp 0';
                     return new Intl.NumberFormat('id-ID', {
@@ -177,6 +371,10 @@
                         minimumFractionDigits: 0
                     }).format(value);
                 },
+
+                init() {
+                    // Initialize function if needed
+                }
             }
         }
     </script>

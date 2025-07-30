@@ -5,7 +5,20 @@
         </h2>
     </x-slot>
 
-    <div class="py-5" x-data="{ tab: 'profile' }">
+    {{-- [UBAH] Tambahkan kondisi untuk session 'status' --}}
+    <div class="py-5" 
+         x-data="{ tab: 'profile' }" 
+         x-init="
+            @if($errors->updatePassword->isNotEmpty() || session('status') === 'password-updated')
+                tab = 'password';
+                $nextTick(() => {
+                    const passwordSection = document.getElementById('update-password-section');
+                    if (passwordSection) {
+                        passwordSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            @endif
+         ">
         <div class="max-w-7xl mx-auto sm:px-4 lg:px-8 space-y-6">
 
             {{-- Navigasi Tab --}}
@@ -27,14 +40,6 @@
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-150 ease-in-out focus:outline-none">
                         Ubah Password
                     </button>
-                    <button @click="tab = 'delete'"
-                            :class="{
-                                'border-red-500 dark:border-red-400 text-red-600 dark:text-red-400': tab === 'delete',
-                                'border-transparent text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-500 hover:border-red-300 dark:hover:border-red-600': tab !== 'delete'
-                            }"
-                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-150 ease-in-out focus:outline-none">
-                        Hapus Akun
-                    </button>
                 </nav>
             </div>
 
@@ -50,19 +55,10 @@
                 </div>
 
                 {{-- Tab Ubah Password --}}
-                <div x-show="tab === 'password'" x-cloak>
+                <div x-show="tab === 'password'" x-cloak id="update-password-section">
                     <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
                         <div class="max-w-xl">
                             @include('profile.partials.update-password-form')
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Tab Hapus Akun --}}
-                <div x-show="tab === 'delete'" x-cloak>
-                    <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
-                        <div class="max-w-xl">
-                            @include('profile.partials.delete-user-form')
                         </div>
                     </div>
                 </div>

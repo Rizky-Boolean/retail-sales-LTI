@@ -11,22 +11,94 @@ use Illuminate\Support\Facades\DB;
 class SparepartController extends Controller
 {
     /**
-     * Menampilkan daftar semua sparepart.
+     * Menampilkan daftar semua sparepart dengan sorting dan search.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $spareparts = Sparepart::active()->latest()->paginate(10);
+        $query = Sparepart::active();
+        
+        // Handle search
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('kode_part', 'like', "%{$searchTerm}%")
+                  ->orWhere('nama_part', 'like', "%{$searchTerm}%")
+                  ->orWhere('satuan', 'like', "%{$searchTerm}%");
+            });
+        }
+        
+        // Handle sorting
+        $sortField = $request->get('sort', 'kode_part'); // default sort by kode_part
+        $sortDirection = $request->get('direction', 'asc'); // default ascending
+        
+        // Validasi kolom yang bisa di-sort untuk keamanan
+        $allowedSorts = ['kode_part', 'nama_part', 'satuan', 'harga_jual'];
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            // Fallback ke default sorting jika kolom tidak valid
+            $query->orderBy('kode_part', 'asc');
+        }
+        
+        $spareparts = $query->paginate(10);
+        
+        // Append query parameters ke pagination links
+        $spareparts->appends($request->query());
+        
         return view('spareparts.index', compact('spareparts'));
     }
-        public function search(Request $request)
+
+    /**
+     * [DEPRECATED] Method search untuk AJAX - tidak digunakan lagi karena menggunakan server-side
+     * Tetap dipertahankan untuk backward compatibility
+     */
+    public function search(Request $request)
     {
         $search = $request->get('search');
         
-        $spareparts = Sparepart::where('kode_part', 'LIKE', "%{$search}%")
-            ->orWhere('nama_part', 'LIKE', "%{$search}%")
+        $spareparts = Sparepart::active()
+            ->where(function($query) use ($search) {
+                $query->where('kode_part', 'LIKE', "%{$search}%")
+                      ->orWhere('nama_part', 'LIKE', "%{$search}%")
+                      ->orWhere('satuan', 'LIKE', "%{$search}%");
+            })
             ->get();
             
         return response()->json($spareparts);
+    }
+
+    /**
+     * Menampilkan daftar sparepart nonaktif dengan sorting dan search.
+     */
+    public function inactive(Request $request)
+    {
+        $query = Sparepart::where('is_active', false);
+        
+        // Handle search untuk halaman inactive
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('kode_part', 'like', "%{$searchTerm}%")
+                  ->orWhere('nama_part', 'like', "%{$searchTerm}%")
+                  ->orWhere('satuan', 'like', "%{$searchTerm}%");
+            });
+        }
+        
+        // Handle sorting untuk halaman inactive
+        $sortField = $request->get('sort', 'kode_part');
+        $sortDirection = $request->get('direction', 'asc');
+        
+        $allowedSorts = ['kode_part', 'nama_part', 'satuan', 'harga_jual'];
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            $query->orderBy('kode_part', 'asc');
+        }
+        
+        $spareparts = $query->paginate(10);
+        $spareparts->appends($request->query());
+        
+        return view('spareparts.inactive', compact('spareparts'));
     }
 
     /**
@@ -61,7 +133,6 @@ class SparepartController extends Controller
         // 4. Redirect ke halaman index dengan pesan sukses
         return redirect()->route('spareparts.index')->with('success', 'Data sparepart berhasil ditambahkan!');
     }
-
 
     /**
      * Menampilkan form untuk mengedit sparepart.
@@ -102,11 +173,6 @@ class SparepartController extends Controller
 
         // 5. Redirect ke halaman index dengan pesan sukses
         return redirect()->route('spareparts.index')->with('success', 'Markup & Harga Jual berhasil diperbarui!');
-    }
-    public function inactive()
-    {
-        $spareparts = Sparepart::where('is_active', false)->paginate(10);
-        return view('spareparts.inactive', compact('spareparts'));
     }
 
     /**

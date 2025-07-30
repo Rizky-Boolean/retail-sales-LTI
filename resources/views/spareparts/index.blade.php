@@ -52,10 +52,58 @@
                     <table id="sparepartsTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-200 dark:bg-gray-700">
                             <tr>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Kode Part</th>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Nama Part</th>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Satuan</th>
-                                <th class="text-right py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Harga Jual</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-150" onclick="sortColumn('kode_part')">
+                                    <div class="flex items-center justify-between">
+                                        <span>Kode Part</span>
+                                        <div class="sort-icons flex flex-col ml-2">
+                                            <svg class="sort-asc w-3 h-3 {{ request('sort') == 'kode_part' && request('direction') == 'asc' ? 'text-blue-500' : 'text-gray-400' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                            <svg class="sort-desc w-3 h-3 {{ request('sort') == 'kode_part' && request('direction') == 'desc' ? 'text-blue-500' : 'text-gray-400' }} rotate-180" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-150" onclick="sortColumn('nama_part')">
+                                    <div class="flex items-center justify-between">
+                                        <span>Nama Part</span>
+                                        <div class="sort-icons flex flex-col ml-2">
+                                            <svg class="sort-asc w-3 h-3 {{ request('sort') == 'nama_part' && request('direction') == 'asc' ? 'text-blue-500' : 'text-gray-400' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                            <svg class="sort-desc w-3 h-3 {{ request('sort') == 'nama_part' && request('direction') == 'desc' ? 'text-blue-500' : 'text-gray-400' }} rotate-180" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-150" onclick="sortColumn('satuan')">
+                                    <div class="flex items-center justify-between">
+                                        <span>Satuan</span>
+                                        <div class="sort-icons flex flex-col ml-2">
+                                            <svg class="sort-asc w-3 h-3 {{ request('sort') == 'satuan' && request('direction') == 'asc' ? 'text-blue-500' : 'text-gray-400' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                            <svg class="sort-desc w-3 h-3 {{ request('sort') == 'satuan' && request('direction') == 'desc' ? 'text-blue-500' : 'text-gray-400' }} rotate-180" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th class="text-right py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-150" onclick="sortColumn('harga_jual')">
+                                    <div class="flex items-center justify-end">
+                                        <span>Harga Jual</span>
+                                        <div class="sort-icons flex flex-col ml-2">
+                                            <svg class="sort-asc w-3 h-3 {{ request('sort') == 'harga_jual' && request('direction') == 'asc' ? 'text-blue-500' : 'text-gray-400' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                            <svg class="sort-desc w-3 h-3 {{ request('sort') == 'harga_jual' && request('direction') == 'desc' ? 'text-blue-500' : 'text-gray-400' }} rotate-180" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </th>
                                 <th class="text-center py-3 px-4 uppercase font-semibold text-xs text-gray-800 dark:text-gray-500 tracking-wider">Aksi</th>
                             </tr>
                         </thead>
@@ -65,7 +113,7 @@
                                     <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->kode_part }}</td>
                                     <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->nama_part }}</td>
                                     <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->satuan }}</td>
-                                    <td class="text-right py-3 px-4 whitespace-nowrap">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
+                                    <td class="text-right py-3 px-4 whitespace-nowrap" data-price="{{ $sparepart->harga_jual }}">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
                                     <td class="text-center py-3 px-4 whitespace-nowrap">
                                         <div class="flex justify-center items-center gap-4">
                                             <a href="{{ route('spareparts.edit', $sparepart->id) }}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
@@ -122,7 +170,7 @@
         </div>
     </div>
 
-    {{-- Script untuk Search dan Modal --}}
+    {{-- Script untuk Search, Modal, dan Server-side Sorting --}}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
@@ -131,58 +179,49 @@
 
         searchInput.addEventListener('input', function() {
             clearTimeout(typingTimer);
-            typingTimer = setTimeout(performSearch, doneTypingInterval);
+            if (searchInput.value.trim() === '') {
+                // Jika search kosong, reload halaman untuk menampilkan data asli dengan sorting
+                const currentUrl = new URL(window.location);
+                currentUrl.searchParams.delete('search');
+                window.location.href = currentUrl.toString();
+            } else {
+                typingTimer = setTimeout(performSearch, doneTypingInterval);
+            }
         });
 
         function performSearch() {
             const searchValue = searchInput.value;
-            const tbody = document.querySelector('#sparepartsTable tbody');
-            const noResultsRow = document.getElementById('noResultsRow');
-
-            fetch(`/spareparts/search?search=${encodeURIComponent(searchValue)}`)
-                .then(response => response.json())
-                .then(data => {
-                    Array.from(tbody.children).forEach(child => {
-                        if (!child.id || (child.id !== 'noResultsRow' && child.id !== 'initialEmptyRow')) {
-                            child.remove();
-                        }
-                    });
-
-                    if (data.length > 0) {
-                        noResultsRow.classList.add('hidden');
-                        data.forEach(sparepart => {
-                            const row = document.createElement('tr');
-                            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 data-row';
-                            
-                            // Escape single quotes in sparepart name for JavaScript
-                            const escapedName = sparepart.nama_part.replace(/'/g, "\\'");
-                            
-                            row.innerHTML = `
-                                <td class="text-left py-3 px-4 whitespace-nowrap">${sparepart.kode_part}</td>
-                                <td class="text-left py-3 px-4 whitespace-nowrap">${sparepart.nama_part}</td>
-                                <td class="text-left py-3 px-4 whitespace-nowrap">${sparepart.satuan}</td>
-                                <td class="text-right py-3 px-4 whitespace-nowrap">Rp ${Number(sparepart.harga_jual).toLocaleString('id-ID')}</td>
-                                <td class="text-center py-3 px-4 whitespace-nowrap">
-                                    <div class="flex justify-center items-center gap-4">
-                                        <a href="/spareparts/${sparepart.id}/edit" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
-                                            <i data-lucide="edit" class="w-4 h-4"></i><span>Edit</span>
-                                        </a>
-                                        <button type="button" onclick="showDeactivateModal('/spareparts/${sparepart.id}/toggleStatus', '${escapedName}')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Nonaktifkan">
-                                            <i data-lucide="power-off" class="w-4 h-4"></i><span>Nonaktifkan</span>
-                                        </button>
-                                    </div>
-                                </td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                        lucide.createIcons(); // Re-render icons for new rows
-                    } else {
-                        noResultsRow.classList.remove('hidden');
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+            if (searchValue.trim() === '') return;
+            
+            // Redirect ke halaman dengan parameter search (dan pertahankan sorting)
+            const currentUrl = new URL(window.location);
+            currentUrl.searchParams.set('search', searchValue);
+            currentUrl.searchParams.set('page', '1'); // Reset ke halaman 1
+            window.location.href = currentUrl.toString();
         }
     });
+
+    // [BARU] Server-side Sorting Function
+    function sortColumn(column) {
+        const currentUrl = new URL(window.location);
+        const currentSort = currentUrl.searchParams.get('sort');
+        const currentDirection = currentUrl.searchParams.get('direction');
+        
+        let newDirection = 'asc';
+        
+        // Jika klik kolom yang sama, toggle direction
+        if (currentSort === column) {
+            newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+        }
+        
+        // Set parameter sorting
+        currentUrl.searchParams.set('sort', column);
+        currentUrl.searchParams.set('direction', newDirection);
+        currentUrl.searchParams.set('page', '1'); // Reset ke halaman 1
+        
+        // Redirect dengan parameter sorting baru
+        window.location.href = currentUrl.toString();
+    }
 
     // [BARU] Script untuk Modal Nonaktifkan
     function showDeactivateModal(actionUrl, itemName) {
