@@ -7,31 +7,32 @@ use App\Models\Supplier;
 use App\Models\Sparepart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\ActivityLog;
 
 class StokMasukController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $stokMasuks = StokMasuk::with('supplier')
-                                ->withSum('details', 'qty')
-                                ->latest()
-                                ->paginate(10);
-                                
+        // Query dasar untuk memuat relasi dan agregasi
+        $query = StokMasuk::with('supplier')->withSum('details', 'qty');
+
+        // Terapkan filter pencarian jika ada
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                // Cari berdasarkan ID (tanpa prefix "TR-")
+                $q->where('id', 'like', "%{$search}%")
+                  // Cari berdasarkan nama supplier melalui relasi
+                  ->orWhereHas('supplier', function($subQ) use ($search) {
+                      $subQ->where('nama_supplier', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Urutkan berdasarkan yang terbaru dan lakukan pagination
+        $stokMasuks = $query->latest('tanggal_masuk')->paginate(10)->withQueryString();
+                                        
         return view('stok-masuk.index', compact('stokMasuks'));
-    }
-    public function search(Request $request)
-    {
-        $search = $request->get('search');
-        
-        $stokMasuks = StokMasuk::with('supplier')
-            ->withSum('details', 'qty')
-            ->where('id', 'LIKE', "%{$search}%")
-            ->orWhereHas('supplier', function($query) use ($search) {
-                $query->where('nama_supplier', 'LIKE', "%{$search}%");
-            })
-            ->get();
-        
-        return response()->json($stokMasuks);
     }
 
     public function show($id)

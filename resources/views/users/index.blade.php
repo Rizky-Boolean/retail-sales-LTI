@@ -13,7 +13,7 @@
 
                         {{-- Search Input --}}
                         <div class="w-full md:w-1/3">
-                            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari pengguna..."
+                            <input type="text" id="searchInput" placeholder="Cari pengguna..."
                                 class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                         </div>
 
@@ -78,15 +78,18 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr id="initialEmptyRow">
+                                <tr>
+                                    @if(request('search'))
                                         <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                            Tidak ada data pengguna.
+                                            Tidak ada pengguna yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
                                         </td>
-                                    </tr>
-                                @endforelse
-                                <tr id="noResultsRow" style="display: none;">
-                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data pengguna yang cocok.</td>
+                                    @else
+                                        <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            Tidak ada data pengguna aktif.
+                                        </td>
+                                    @endif
                                 </tr>
+                            @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -123,60 +126,49 @@
         </div>
     </div>
 
-    {{-- Script untuk Search dan Modal --}}
+  {{-- Script untuk Search dan Modal --}}
     <script>
-        // Fungsi Search Tabel
-        function filterTable() {
-            let input, filter, table, tr, i;
-            input = document.getElementById("searchInput");
-            filter = input.value.toUpperCase();
-            table = document.getElementById("usersTable");
-            tr = table.getElementsByTagName("tr");
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
-            let foundDataRows = 0;
+        // [DIUBAH] Logika Pencarian Server-side
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            let typingTimer;
+            const doneTypingInterval = 500;
 
-            for (i = 1; i < tr.length; i++) { // Mulai dari 1 untuk lewati header
-                if (tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") {
-                    continue;
-                }
-                
-                let tdName = tr[i].getElementsByTagName("td")[0];
-                let tdEmail = tr[i].getElementsByTagName("td")[1];
-                let rowMatchesFilter = false;
-
-                if (tdName && tdName.textContent.toUpperCase().indexOf(filter) > -1) {
-                    rowMatchesFilter = true;
-                }
-                if (!rowMatchesFilter && tdEmail && tdEmail.textContent.toUpperCase().indexOf(filter) > -1) {
-                    rowMatchesFilter = true;
-                }
-
-                if (rowMatchesFilter) {
-                    tr[i].style.display = "";
-                    foundDataRows++;
-                } else {
-                    tr[i].style.display = "none";
-                }
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSearch = urlParams.get('search');
+            if (currentSearch) {
+                searchInput.value = currentSearch;
+                searchInput.focus();
             }
 
-            if (noResultsRow) {
-                noResultsRow.style.display = (foundDataRows === 0 && filter !== "") ? "" : "none";
-            }
-            if (initialEmptyRow) {
-                initialEmptyRow.style.display = (foundDataRows === 0 && filter === "") ? "" : "none";
-            }
-        }
+            searchInput.addEventListener('input', function() {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    const searchValue = searchInput.value.trim();
+                    const currentUrl = new URL(window.location);
 
-        // [TAMBAH] Fungsi untuk Modal
+                    if (searchValue) {
+                        currentUrl.searchParams.set('search', searchValue);
+                    } else {
+                        currentUrl.searchParams.delete('search');
+                    }
+                    
+                    currentUrl.searchParams.set('page', '1');
+
+                    if (window.location.href !== currentUrl.href) {
+                        window.location.href = currentUrl.toString();
+                    }
+                }, doneTypingInterval);
+            });
+        });
+
+        // [TIDAK DIUBAH] Fungsi untuk Modal
         const deactivateModal = document.getElementById('deactivateModal');
         const deactivateForm = document.getElementById('deactivateForm');
-        // [UBAH] Menggunakan ID yang benar
         const deactivateModalTitle = document.getElementById('deactivateModalTitle');
 
         function showDeactivateModal(actionUrl, userName) {
             deactivateForm.action = actionUrl;
-            // [UBAH] Mengatur teks pada elemen h3
             deactivateModalTitle.innerHTML = `Anda yakin ingin menonaktifkan "<strong>${userName}</strong>"?`;
             deactivateModal.classList.remove('hidden');
         }

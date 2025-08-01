@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Notifications\ShipmentRejectedNotification;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
+use App\Models\ActivityLog;
 
 class CabangController extends Controller
 {
@@ -19,9 +20,23 @@ class CabangController extends Controller
     // METHOD UNTUK MANAJEMEN CABANG (SUPER ADMIN)
     // =================================================================
     
-    public function index()
+    public function index(Request $request)
     {
-        $cabangs = Cabang::active()->latest()->paginate(10);
+        // Query dasar untuk cabang aktif
+        $query = Cabang::query()->where('is_active', true);
+
+        // Terapkan filter pencarian jika ada
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('nama_cabang', 'like', "%{$search}%")
+                  ->orWhere('alamat', 'like', "%{$search}%");
+            });
+        }
+
+        // Ambil data dengan pagination dan sertakan query string
+        $cabangs = $query->latest()->paginate(10)->withQueryString();
+        
         return view('cabangs.index', compact('cabangs'));
     }
 
@@ -76,8 +91,20 @@ class CabangController extends Controller
     public function toggleStatus(Cabang $cabang)
     {
         $cabang->is_active = !$cabang->is_active;
-        $cabang->save();
-        $message = $cabang->is_active ? 'Data cabang berhasil diaktifkan.' : 'Data cabang berhasil dinonaktifkan.';
+        $actionText = $cabang->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        
+        Cabang::withoutEvents(function () use ($cabang) {
+            $cabang->save();
+        });
+
+        // Mencatat aktivitas
+        ActivityLog::create([
+            'user_id'     => auth()->id(),
+            'description' => "Cabang '{$cabang->nama_cabang}' telah {$actionText}.",
+            'ip_address'  => request()->ip(),
+        ]);
+
+        $message = "Data cabang berhasil {$actionText}.";
         return redirect()->back()->with('success', $message);
     }
 

@@ -14,7 +14,7 @@
                     {{-- Main Search Bar --}}
                     <div class="flex flex-col md:flex-row gap-4 items-center">
                         <div class="w-full md:w-1/2">
-                            <input type="text" id="searchInput" placeholder="Cari berdasarkan pengguna, aktivitas, IP, atau tanggal (25/12/2024)..."
+                            <input type="text" id="searchInput" placeholder="Cari berdasarkan pengguna, aktivitas, IP, atau tanggal (25/12/2025)..."
                                    value="{{ request('search') }}"
                                    class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                         </div>
@@ -35,7 +35,7 @@
 
                     {{-- Search Tips --}}
                     <div class="text-sm text-gray-500 dark:text-gray-400">
-                        <strong>Tips pencarian:</strong> Cari berdasarkan nama pengguna, deskripsi aktivitas, alamat IP, atau tanggal (format: 25/12/2024, 2024, januari, dll.)
+                        <strong>Tips pencarian:</strong> Cari berdasarkan nama pengguna, deskripsi aktivitas, alamat IP, atau tanggal (format: 25/12/2025, 2025, januari, dll.)
                     </div>
                 </div>
 
@@ -102,64 +102,45 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                            {{-- Data dari server --}}
-                            @if($logs->isNotEmpty())
-                                @foreach($logs as $log)
-                                    <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row">
-                                        <td class="py-2 px-4 whitespace-nowrap">
-                                            <div class="flex flex-col">
-                                                <span class="font-medium">{{ $log->created_at->format('d M Y') }}</span>
-                                                <span class="text-xs text-gray-500">{{ $log->created_at->format('H:i:s') }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="py-2 px-4">
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full flex items-center justify-center text-sm font-medium mr-3">
-                                                    {{ substr($log->user->name ?? 'S', 0, 1) }}
-                                                </div>
-                                                <span>{{ $log->user->name ?? 'Sistem' }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="py-2 px-4">
-                                            <div class="max-w-md">
-                                                <p class="text-sm">{{ $log->description }}</p>
-                                            </div>
-                                        </td>
-                                        <td class="py-2 px-4">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                                {{ $log->ip_address }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @endforeach
+                        @forelse($logs as $log)
+                            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row">
+                                <td class="py-2 px-4 whitespace-nowrap">
+                                    <div class="flex flex-col">
+                                        <span class="font-medium">{{ $log->created_at->format('d M Y') }}</span>
+                                        <span class="text-xs text-gray-500">{{ $log->created_at->format('H:i:s') }}</span>
+                                    </div>
+                                </td>
+                                <td class="py-2 px-4">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full flex items-center justify-center text-sm font-medium mr-3">
+                                            {{ substr($log->user->name ?? 'S', 0, 1) }}
+                                        </div>
+                                        <span>{{ $log->user->name ?? 'Sistem' }}</span>
+                                    </div>
+                                </td>
+                                <td class="py-2 px-4">
+                                    <p class="text-sm">{{ $log->description }}</p>
+                                </td>
+                                <td class="py-2 px-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                        {{ $log->ip_address }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                              @if(request('search'))
+                                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                    Tidak ada log yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
+                                </td>
+                            @else
+                                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                    Tidak ada aktivitas yang tercatat.
+                                </td>
                             @endif
-
-                            {{-- Empty state --}}
-                            <tr id="initialEmptyRow" @if($logs->isNotEmpty()) style="display: none;" @endif>
-                                <td colspan="4" class="text-center py-8 text-gray-500 dark:text-gray-400">
-                                    <div class="flex flex-col items-center">
-                                        <svg class="w-12 h-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                        <p class="text-lg font-medium">Tidak ada aktivitas yang tercatat</p>
-                                        <p class="text-sm">Log aktivitas akan muncul di sini</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            {{-- No search results --}}
-                            <tr id="noResultsRow" style="display: none;">
-                                <td colspan="4" class="text-center py-8 text-gray-500 dark:text-gray-400">
-                                    <div class="flex flex-col items-center">
-                                        <svg class="w-12 h-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                        </svg>
-                                        <p class="text-lg font-medium">Tidak ada log yang cocok</p>
-                                        <p class="text-sm">Coba ubah kata kunci pencarian Anda</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
+                        </tr>
+                    @endforelse
+                </tbody>
                     </table>
                 </div>
 
@@ -171,95 +152,84 @@
         </div>
     </div>
 
-    {{-- Script untuk Search dan Server-side Sorting --}}
+    {{-- Ganti seluruh script Anda dengan ini --}}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
         let typingTimer;
-        const doneTypingInterval = 500; // Sedikit lebih lama untuk advanced search
+        const doneTypingInterval = 700;
 
+         // Otomatis fokus dan atur posisi kursor
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('search')) {
+            searchInput.focus();
+            // [DIUBAH] Pindahkan kursor ke akhir teks, bukan menyeleksi semuanya
+            const val = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = val;
+        }
+
+        // Fungsi utama untuk menjalankan filter/pencarian
+        function runSearch() {
+            const currentUrl = new URL(window.location);
+            const searchValue = searchInput.value.trim();
+
+            if (searchValue) {
+                currentUrl.searchParams.set('search', searchValue);
+            } else {
+                // Hapus parameter search jika input kosong
+                currentUrl.searchParams.delete('search');
+            }
+            currentUrl.searchParams.set('page', '1'); // Selalu reset ke halaman 1 saat pencarian baru
+            
+            // Hanya redirect jika URL benar-benar berubah
+            if (window.location.href !== currentUrl.href) {
+                window.location.href = currentUrl.toString();
+            }
+        }
+
+        // Listener untuk input, dengan jeda (debounce)
         searchInput.addEventListener('input', function() {
             clearTimeout(typingTimer);
-            if (searchInput.value.trim() === '') {
-                // Jika search kosong, reload halaman untuk menampilkan data asli dengan sorting
-                const currentUrl = new URL(window.location);
-                currentUrl.searchParams.delete('search');
-                window.location.href = currentUrl.toString();
-            } else {
-                typingTimer = setTimeout(performSearch, doneTypingInterval);
+            typingTimer = setTimeout(runSearch, doneTypingInterval);
+        });
+
+        // Listener untuk tombol Enter, tanpa jeda
+        searchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                clearTimeout(typingTimer); // Batalkan timer jika ada
+                runSearch();
             }
         });
 
-        function performSearch() {
-            const searchValue = searchInput.value;
-            if (searchValue.trim() === '') return;
+        // Membuat fungsi global agar bisa dipanggil dari HTML (onclick)
+        window.quickSearch = function(period) {
+            let searchTerm = '';
+            if (period === 'today') searchTerm = 'hari ini';
+            if (period === 'yesterday') searchTerm = 'kemarin';
+            if (period === 'this_week') searchTerm = 'minggu ini';
             
-            // Redirect ke halaman dengan parameter search (dan pertahankan sorting)
+            if (searchTerm) {
+                searchInput.value = searchTerm;
+                runSearch();
+            }
+        }
+
+        window.sortColumn = function(column) {
             const currentUrl = new URL(window.location);
-            currentUrl.searchParams.set('search', searchValue);
-            currentUrl.searchParams.set('page', '1'); // Reset ke halaman 1
-            window.location.href = currentUrl.toString();
-        }
-    });
-
-    // Server-side Sorting Function
-    function sortColumn(column) {
-        const currentUrl = new URL(window.location);
-        const currentSort = currentUrl.searchParams.get('sort');
-        const currentDirection = currentUrl.searchParams.get('direction');
-        
-        let newDirection = 'asc';
-        
-        // Jika klik kolom yang sama, toggle direction
-        if (currentSort === column) {
-            newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-        }
-        
-        // Set parameter sorting
-        currentUrl.searchParams.set('sort', column);
-        currentUrl.searchParams.set('direction', newDirection);
-        currentUrl.searchParams.set('page', '1'); // Reset ke halaman 1
-        
-        // Redirect dengan parameter sorting baru
-        window.location.href = currentUrl.toString();
-    }
-
-    // Quick Search Functions
-    function quickSearch(period) {
-        const currentUrl = new URL(window.location);
-        const today = new Date();
-        let searchTerm = '';
-        
-        switch(period) {
-            case 'today':
-                searchTerm = today.toLocaleDateString('id-ID');
-                break;
-            case 'yesterday':
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                searchTerm = yesterday.toLocaleDateString('id-ID');
-                break;
-            case 'this_week':
-                // Cari berdasarkan minggu ini (akan mencari berdasarkan range tanggal)
-                const startOfWeek = new Date(today);
-                startOfWeek.setDate(today.getDate() - today.getDay());
-                searchTerm = startOfWeek.toLocaleDateString('id-ID');
-                break;
-        }
-        
-        if (searchTerm) {
-            currentUrl.searchParams.set('search', searchTerm);
+            const currentSort = currentUrl.searchParams.get('sort');
+            const currentDirection = currentUrl.searchParams.get('direction');
+            
+            let newDirection = 'asc';
+            if (currentSort === column && currentDirection === 'asc') {
+                newDirection = 'desc';
+            }
+            
+            currentUrl.searchParams.set('sort', column);
+            currentUrl.searchParams.set('direction', newDirection);
             currentUrl.searchParams.set('page', '1');
+            
             window.location.href = currentUrl.toString();
-        }
-    }
-
-    // Update search input dengan nilai dari URL saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const searchValue = urlParams.get('search');
-        if (searchValue) {
-            document.getElementById('searchInput').value = searchValue;
         }
     });
     </script>

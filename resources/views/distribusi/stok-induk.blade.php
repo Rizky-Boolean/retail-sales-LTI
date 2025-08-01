@@ -28,7 +28,7 @@
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
                             @forelse($spareparts as $sparepart)
-                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row">
                                     <td class="py-3 px-4">{{ $sparepart->kode_part }}</td>
                                     <td class="py-3 px-4">{{ $sparepart->nama_part }}</td>
                                     <td class="py-3 px-4 text-center">{{ $sparepart->stok_induk }}</td>
@@ -49,17 +49,18 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr id="initialEmptyRow">
-                                    <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                        Tidak ada data sparepart di gudang induk.
-                                    </td>
+                                <tr>
+                                    @if(request('search'))
+                                        <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            Tidak ada sparepart yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
+                                        </td>
+                                    @else
+                                        <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            Tidak ada data sparepart di gudang induk.
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforelse
-                            <tr id="noResultsRow" style="display: none;">
-                                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                    Tidak ada sparepart yang cocok.
-                                </td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -77,103 +78,41 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
-        const tbody = document.querySelector('#stokTable tbody');
         let typingTimer;
-        const doneTypingInterval = 300;
+        const doneTypingInterval = 500;
 
-        // Create empty state rows if they don't exist
-        if (!document.getElementById('noResultsRow')) {
-            const noResultsRow = document.createElement('tr');
-            noResultsRow.id = 'noResultsRow';
-            noResultsRow.style.display = 'none';
-            noResultsRow.innerHTML = `
-                <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                    Tidak ada sparepart yang cocok dengan pencarian.
-                </td>
-            `;
-            tbody.appendChild(noResultsRow);
+        // Otomatis fokus dan atur kursor
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSearch = urlParams.get('search');
+        if (currentSearch) {
+            searchInput.value = currentSearch;
+            searchInput.focus();
+            
+            const val = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = val;
         }
 
+        // Listener untuk input pencarian
         searchInput.addEventListener('input', function() {
             clearTimeout(typingTimer);
-            typingTimer = setTimeout(performSearch, doneTypingInterval);
+            typingTimer = setTimeout(() => {
+                const currentUrl = new URL(window.location);
+                const searchValue = searchInput.value.trim();
+
+                if (searchValue) {
+                    currentUrl.searchParams.set('search', searchValue);
+                } else {
+                    currentUrl.searchParams.delete('search');
+                }
+                
+                currentUrl.searchParams.set('page', '1');
+                
+                if (window.location.href !== currentUrl.href) {
+                    window.location.href = currentUrl.toString();
+                }
+            }, doneTypingInterval);
         });
-
-        function performSearch() {
-            const searchValue = searchInput.value;
-            const noResultsRow = document.getElementById('noResultsRow');
-
-            // Show loading state
-            tbody.classList.add('opacity-50');
-
-            fetch(`/stok-gudang-induk/search?search=${encodeURIComponent(searchValue)}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Remove loading state
-                    tbody.classList.remove('opacity-50');
-
-                    // Clear existing rows except special rows
-                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow)');
-                    rows.forEach(row => row.remove());
-
-                    if (data.length > 0) {
-                        if (noResultsRow) noResultsRow.style.display = 'none';
-
-                        data.forEach(sparepart => {
-                            const row = document.createElement('tr');
-                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
-
-                            // Determine stock status and class
-                            let stockStatus = '';
-                            let stockClass = '';
-                            
-                            if (sparepart.stok_induk <= 0) {
-                                stockStatus = 'Habis';
-                                stockClass = 'text-red-600 dark:text-red-400';
-                            } else if (sparepart.stok_induk <= 5) {
-                                stockStatus = 'Hampir Habis';
-                                stockClass = 'text-yellow-600 dark:text-yellow-400';
-                            } else {
-                                stockStatus = 'Tersedia';
-                                stockClass = 'text-green-600 dark:text-green-400';
-                            }
-
-                            row.innerHTML = `
-                                <td class="py-3 px-4">${sparepart.kode_part}</td>
-                                <td class="py-3 px-4">${sparepart.nama_part}</td>
-                                <td class="py-3 px-4 text-center">${sparepart.stok_induk}</td>
-                                <td class="py-3 px-4 text-center">
-                                    ${sparepart.stok_induk <= 0 
-                                        ? '<span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Habis</span>'
-                                        : sparepart.stok_induk <= 5
-                                            ? '<span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Hampir Habis</span>'
-                                            : '<span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Tersedia</span>'
-                                    }
-                                </td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                    } else {
-                        if (noResultsRow) noResultsRow.style.display = '';
-                    }
-                })
-                .catch(error => {
-                    console.error('Search error:', error);
-                    tbody.classList.remove('opacity-50');
-                    const errorRow = document.createElement('tr');
-                    errorRow.innerHTML = `
-                        <td colspan="4" class="text-center py-4 text-red-500">
-                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
-                        </td>
-                    `;
-                    tbody.appendChild(errorRow);
-                });
-        }
     });
     </script>
 </x-app-layout>

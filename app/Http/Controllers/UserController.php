@@ -8,15 +8,35 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\Rule;
+use App\Models\ActivityLog;
 
 class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::active()->with('cabang')->latest()->paginate(10);
+        // Query dasar untuk user aktif dengan relasi cabang
+        $query = User::with('cabang')->where('is_active', true);
+
+        // Terapkan filter pencarian jika ada
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('role', 'like', "%{$search}%")
+                  // Cari berdasarkan nama cabang melalui relasi
+                  ->orWhereHas('cabang', function($subQ) use ($search) {
+                      $subQ->where('nama_cabang', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Ambil data dengan pagination dan sertakan query string
+        $users = $query->latest()->paginate(10)->withQueryString();
+
         return view('users.index', compact('users'));
     }
 
@@ -116,9 +136,22 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
         }
+        
         $user->is_active = !$user->is_active;
-        $user->save();
-        $message = $user->is_active ? 'Data user berhasil diaktifkan.' : 'Data user berhasil dinonaktifkan.';
+        $actionText = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        
+        User::withoutEvents(function () use ($user) {
+            $user->save();
+        });
+
+        // Mencatat aktivitas
+        ActivityLog::create([
+            'user_id'     => auth()->id(),
+            'description' => "Pengguna '{$user->name}' telah {$actionText}.",
+            'ip_address'  => request()->ip(),
+        ]);
+
+        $message = "Data user berhasil {$actionText}.";
         return redirect()->back()->with('success', $message);
     }
 }

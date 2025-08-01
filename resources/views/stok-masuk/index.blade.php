@@ -47,24 +47,29 @@
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
                             @forelse($stokMasuks as $stokMasuk)
-                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                                    <td class="py-3 px-4">TR-{{ $stokMasuk->id }}</td>
-                                    <td class="py-3 px-4">{{ \Carbon\Carbon::parse($stokMasuk->tanggal_masuk)->format('d M Y') }}</td>
-                                    <td class="py-3 px-4">{{ $stokMasuk->supplier->nama_supplier ?? 'N/A' }}</td>
-                                    <td class="py-3 px-4 ">{{ $stokMasuk->details_sum_qty }}</td>
-                                    <td class="py-3 px-4 ">{{ 'Rp ' . number_format($stokMasuk->total_final, 0, ',', '.') }}</td>
-                                    <td class="py-3 px-4 text-center ">
-                                        <a href="{{ route('stok-masuk.show', $stokMasuk->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Detail</a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-4">Belum ada data stok masuk.</td>
-                                </tr>
-                            @endforelse
-                            <tr id="noResultsRow" style="display: none;">
-                                <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data stok masuk yang cocok.</td>
+                            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <td class="py-3 px-4">TR-{{ $stokMasuk->id }}</td>
+                                <td class="py-3 px-4">{{ \Carbon\Carbon::parse($stokMasuk->tanggal_masuk)->format('d M Y') }}</td>
+                                <td class="py-3 px-4">{{ $stokMasuk->supplier->nama_supplier ?? 'N/A' }}</td>
+                                <td class="py-3 px-4 ">{{ $stokMasuk->details_sum_qty }}</td>
+                                <td class="py-3 px-4 ">{{ 'Rp ' . number_format($stokMasuk->total_final, 0, ',', '.') }}</td>
+                                <td class="py-3 px-4 text-center ">
+                                    <a href="{{ route('stok-masuk.show', $stokMasuk->id) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Detail</a>
+                                </td>
                             </tr>
+                        @empty
+                            <tr>
+                                @if(request('search'))
+                                    <td colspan="6" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada histori yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
+                                    </td>
+                                @else
+                                    <td colspan="6" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Belum ada data stok masuk.
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -78,67 +83,41 @@
         </div>
     </div>
 
-    {{-- Script Filter --}}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchInput');
-        let typingTimer;
-        const doneTypingInterval = 300;
+{{-- Script untuk Search dan Server-side Logic --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    let typingTimer;
+    const doneTypingInterval = 500; // Jeda 500ms
 
-        searchInput.addEventListener('input', function() {
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(performSearch, doneTypingInterval);
-        });
+    // Set nilai input dari URL saat halaman dimuat
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSearch = urlParams.get('search');
+    if (currentSearch) {
+        searchInput.value = currentSearch;
+        searchInput.focus();
+    }
 
-        function performSearch() {
-            const searchValue = searchInput.value;
-            const tbody = document.querySelector('#stokMasukTable tbody');
-            const noResultsRow = document.getElementById('noResultsRow');
+    // Listener untuk input pencarian
+    searchInput.addEventListener('input', function() {
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            const searchValue = searchInput.value.trim();
+            const currentUrl = new URL(window.location);
 
-            fetch(`/stok-masuk/search?search=${encodeURIComponent(searchValue)}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Clear existing rows except the noResultsRow
-                    Array.from(tbody.children).forEach(child => {
-                        if (!child.id || (child.id !== 'noResultsRow' && child.id !== 'initialEmptyRow')) {
-                            child.remove();
-                        }
-                    });
+            if (searchValue) {
+                currentUrl.searchParams.set('search', searchValue);
+            } else {
+                currentUrl.searchParams.delete('search');
+            }
+            
+            currentUrl.searchParams.set('page', '1');
 
-                    if (data.length > 0) {
-                        noResultsRow.style.display = 'none';
-                        data.forEach(stokMasuk => {
-                            const row = document.createElement('tr');
-                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
-                            
-                            // Format date using JavaScript
-                            const date = new Date(stokMasuk.tanggal_masuk);
-                            const formattedDate = date.toLocaleDateString('id-ID', { 
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                            });
-
-                            row.innerHTML = `
-                                <td class="py-3 px-4">TR-${stokMasuk.id}</td>
-                                <td class="py-3 px-4">${formattedDate}</td>
-                                <td class="py-3 px-4">${stokMasuk.supplier ? stokMasuk.supplier.nama_supplier : 'N/A'}</td>
-                                <td class="py-3 px-4">${stokMasuk.details_sum_qty}</td>
-                                <td class="py-3 px-4">Rp ${Number(stokMasuk.total_final).toLocaleString('id-ID')}</td>
-                                <td class="py-3 px-4 text-center">
-                                    <a href="/stok-masuk/${stokMasuk.id}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded">Detail</a>
-                                </td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                    } else {
-                        noResultsRow.style.display = '';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
+            if (window.location.href !== currentUrl.href) {
+                window.location.href = currentUrl.toString();
+            }
+        }, doneTypingInterval);
     });
-    </script>
+});
+</script>
 </x-app-layout>

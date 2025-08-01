@@ -49,29 +49,35 @@
                         </thead>
                         <tbody class="text-gray-700 dark:text-gray-300">
                             @forelse($suppliers as $supplier)
-                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row">
-                                    <td class="py-3 px-4">{{ $supplier->nama_supplier }}</td>
-                                    <td class="py-3 px-4">{{ $supplier->alamat }}</td>
-                                    <td class="py-3 px-4">{{ $supplier->kontak }}</td>
-                                    <td class="py-3 px-4 text-center">
-                                        <div class="flex justify-center items-center gap-4">
-                                            <a href="{{ route('suppliers.edit', $supplier) }}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
-                                                <i data-lucide="edit" class="w-4 h-4"></i><span>Edit</span>
-                                            </a>
-                                            <button type="button" onclick="showDeactivateModal('{{ route('suppliers.toggleStatus', $supplier) }}', '{{ addslashes($supplier->nama_supplier) }}')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Nonaktifkan">
-                                                <i data-lucide="power-off" class="w-4 h-4"></i><span>Nonaktifkan</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr id="initialEmptyRow">
-                                    <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data supplier.</td>
-                                </tr>
-                            @endforelse
-                            <tr id="noResultsRow" style="display: none;">
-                                <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data supplier yang cocok.</td>
+                            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row">
+                                <td class="py-3 px-4">{{ $supplier->nama_supplier }}</td>
+                                <td class="py-3 px-4">{{ $supplier->alamat }}</td>
+                                <td class="py-3 px-4">{{ $supplier->kontak }}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <div class="flex justify-center items-center gap-4">
+                                        <a href="{{ route('suppliers.edit', $supplier) }}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
+                                            <i data-lucide="edit" class="w-4 h-4"></i><span>Edit</span>
+                                        </a>
+                                        <button type="button" onclick="showDeactivateModal('{{ route('suppliers.toggleStatus', $supplier) }}', '{{ addslashes($supplier->nama_supplier) }}')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Nonaktifkan">
+                                            <i data-lucide="power-off" class="w-4 h-4"></i><span>Nonaktifkan</span>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
+                        @empty
+                            <tr>
+                                {{-- Pesan dinamis berdasarkan pencarian --}}
+                                @if(request('search'))
+                                    <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada supplier yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
+                                    </td>
+                                @else
+                                    <td colspan="4" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada data supplier aktif.
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -105,69 +111,52 @@
         </div>
     </div>
 
-    {{-- Script untuk Search dan Modal --}}
+    {{-- Script untuk Search, Modal, dan Server-side Logic --}}
     <script>
+        // Logika untuk Search (Sudah Benar)
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('searchInput');
             let typingTimer;
-            const doneTypingInterval = 300;
+            const doneTypingInterval = 500;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSearch = urlParams.get('search');
+            if (currentSearch) {
+                searchInput.value = currentSearch;
+                searchInput.focus();
+                
+                // Trik untuk memindahkan kursor ke akhir
+                const val = searchInput.value;
+                searchInput.value = '';
+                searchInput.value = val;
+            }
 
             searchInput.addEventListener('input', function() {
                 clearTimeout(typingTimer);
-                typingTimer = setTimeout(performSearch, doneTypingInterval);
+                typingTimer = setTimeout(() => {
+                    const searchValue = searchInput.value.trim();
+                    const currentUrl = new URL(window.location);
+
+                    if (searchValue) {
+                        currentUrl.searchParams.set('search', searchValue);
+                    } else {
+                        currentUrl.searchParams.delete('search');
+                    }
+                    
+                    currentUrl.searchParams.set('page', '1');
+
+                    if (window.location.href !== currentUrl.href) {
+                        window.location.href = currentUrl.toString();
+                    }
+                }, doneTypingInterval);
             });
-
-            function performSearch() {
-                const searchValue = searchInput.value;
-                const tbody = document.querySelector('#suppliersTable tbody');
-                const noResultsRow = document.getElementById('noResultsRow');
-                const initialEmptyRow = document.getElementById('initialEmptyRow');
-
-                fetch(`/suppliers/search?search=${encodeURIComponent(searchValue)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Hapus semua baris data yang ada
-                        tbody.querySelectorAll('.data-row').forEach(row => row.remove());
-                        
-                        if (initialEmptyRow) initialEmptyRow.style.display = 'none';
-                        noResultsRow.style.display = 'none';
-
-                        if (data.length > 0) {
-                            data.forEach(supplier => {
-                                const row = document.createElement('tr');
-                                row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition data-row';
-                                
-                                const escapedName = supplier.nama_supplier.replace(/'/g, "\\'");
-                                
-                                row.innerHTML = `
-                                    <td class="py-3 px-4">${supplier.nama_supplier}</td>
-                                    <td class="py-3 px-4">${supplier.alamat || ''}</td>
-                                    <td class="py-3 px-4">${supplier.kontak || ''}</td>
-                                    <td class="py-3 px-4 text-center">
-                                        <div class="flex justify-center items-center gap-4">
-                                            <a href="/suppliers/${supplier.id}/edit" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
-                                                <i data-lucide="edit" class="w-4 h-4"></i><span>Edit</span>
-                                            </a>
-                                            <button type="button" onclick="showDeactivateModal('/suppliers/${supplier.id}/toggleStatus', '${escapedName}')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Nonaktifkan">
-                                                <i data-lucide="power-off" class="w-4 h-4"></i><span>Nonaktifkan</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                `;
-                                tbody.insertBefore(row, noResultsRow);
-                            });
-                            lucide.createIcons(); // Render ikon untuk baris baru
-                        } else {
-                            noResultsRow.style.display = '';
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-            }
         });
 
+        // [TAMBAHKAN INI] Logika untuk Modal Nonaktifkan
         function showDeactivateModal(actionUrl, itemName) {
             const deactivateForm = document.getElementById('deactivateForm');
             const deactivateModalTitle = document.getElementById('deactivateModalTitle');
+            
             deactivateForm.action = actionUrl;
             deactivateModalTitle.innerHTML = `Anda yakin ingin menonaktifkan supplier <strong>${itemName}</strong>?`;
             document.getElementById('deactivateModal').classList.remove('hidden');

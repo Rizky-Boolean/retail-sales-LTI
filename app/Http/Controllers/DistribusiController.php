@@ -11,46 +11,48 @@ use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Notifications\NewDistributionNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Models\ActivityLog;
 
 class DistribusiController extends Controller
 {
-    /**
-     * Menampilkan histori transaksi distribusi.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $distribusis = Distribusi::with('cabangTujuan')->latest()->paginate(10);
+        $query = Distribusi::with('cabangTujuan');
+
+        // Terapkan filter pencarian
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                // Cari berdasarkan ID (tanpa prefix "DIST-")
+                $q->where('id', 'like', "%{$search}%")
+                  // Cari berdasarkan nama cabang tujuan melalui relasi
+                  ->orWhereHas('cabangTujuan', function($subQ) use ($search) {
+                      $subQ->where('nama_cabang', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $distribusis = $query->latest()->paginate(10)->withQueryString();
+        
         return view('distribusi.index', compact('distribusis'));
     }
-    public function search(Request $request)
+
+    public function stokInduk(Request $request)
     {
-        $search = $request->get('search');
-        
-        $distribusis = Distribusi::with('cabangTujuan')
-            ->where(function($query) use ($search) {
-                $query->where('id', 'LIKE', "%{$search}%")
-                    ->orWhereHas('cabangTujuan', function($q) use ($search) {
-                        $q->where('nama_cabang', 'LIKE', "%{$search}%");
-                    });
-            })
-            ->latest()
-            ->get();
-        
-        return response()->json($distribusis);
-    }
-    public function searchStokInduk(Request $request)
-    {
-        $search = $request->get('search');
-        
-        $spareparts = Sparepart::where(function($query) use ($search) {
-            $query->where('kode_part', 'LIKE', "%{$search}%")
-                ->orWhere('nama_part', 'LIKE', "%{$search}%")
-                ->orWhere('satuan', 'LIKE', "%{$search}%");
-        })
-        ->orderBy('nama_part')
-        ->get();
-        
-        return response()->json($spareparts);
+        $query = Sparepart::query();
+
+        $search = $request->input('search');
+        if ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function ($q) use ($searchLower) {
+                $q->where(DB::raw('LOWER(kode_part)'), 'like', "%{$searchLower}%")
+                ->orWhere(DB::raw('LOWER(nama_part)'), 'like', "%{$searchLower}%");
+            });
+        }
+
+        $spareparts = $query->orderBy('nama_part')->paginate(20)->withQueryString();
+
+        return view('distribusi.stok-induk', compact('spareparts'));
     }
 
     /**
@@ -60,13 +62,10 @@ class DistribusiController extends Controller
     {
         $user = auth()->user();
 
-        // Jika user adalah admin cabang, cek apakah kiriman ini untuk cabangnya.
         if ($user->role === 'admin_cabang' && $distribusi->cabang_id_tujuan != $user->cabang_id) {
-            // Jika bukan, tolak akses.
             abort(403, 'ANDA TIDAK BERHAK MELIHAT DETAIL KIRIMAN INI.');
         }
 
-        // Eager load semua relasi yang dibutuhkan
         $distribusi->load('cabangTujuan', 'user', 'details.sparepart');
         
         return view('distribusi.show', compact('distribusi'));
@@ -96,9 +95,7 @@ class DistribusiController extends Controller
         ]);
 
         try {
-            // Simpan hasil transaction ke variabel
             $distribusi = DB::transaction(function () use ($validated) {
-                // 1. Validasi stok terlebih dahulu sebelum melakukan operasi apapun
                 foreach ($validated['details'] as $item) {
                     $sparepart = Sparepart::find($item['sparepart_id']);
                     if ($sparepart->stok_induk < $item['qty']) {
@@ -108,20 +105,18 @@ class DistribusiController extends Controller
                     }
                 }
 
-                // 2. Buat record header distribusi (total masih 0)
                 $distribusi = Distribusi::create([
                     'tanggal_distribusi' => $validated['tanggal_distribusi'],
                     'user_id' => auth()->id(),
                     'cabang_id_tujuan' => $validated['cabang_id_tujuan'],
                     'status' => 'dikirim',
                     'total_harga_modal' => 0,
-                    'total_ppn_distribusi' => 0, // PPN akan selalu 0
+                    'total_ppn_distribusi' => 0,
                     'total_harga_kirim' => 0,
                 ]);
 
                 $totalHargaModal = 0;
 
-                // Proses setiap item detail
                 foreach ($validated['details'] as $item) {
                     $sparepart = Sparepart::find($item['sparepart_id']);
                     $qty = $item['qty'];
@@ -135,41 +130,31 @@ class DistribusiController extends Controller
                     ]);
 
                     $sparepart->decrement('stok_induk', $qty);
-
                     $totalHargaModal += $hargaModal * $qty;
                 }
 
                 $distribusi->update([
                     'total_harga_modal' => $totalHargaModal,
-                    'total_ppn_distribusi' => 0, // Hardcode PPN menjadi 0
-                    'total_harga_kirim' => $totalHargaModal, // Total kirim = total modal
+                    'total_ppn_distribusi' => 0,
+                    'total_harga_kirim' => $totalHargaModal,
                 ]);
 
                 return $distribusi;
             });
 
-            // [START] Logika untuk Mengirim Notifikasi
             $targetUsers = User::where('role', 'admin_gudang_cabang')
-                               ->where('cabang_id', $distribusi->cabang_id_tujuan)
-                               ->get();
+                                  ->where('cabang_id', $distribusi->cabang_id_tujuan)
+                                  ->get();
 
             if ($targetUsers->isNotEmpty()) {
                 Notification::send($targetUsers, new NewDistributionNotification($distribusi));
             }
-            // [END] Logika untuk Mengirim Notifikasi
-
+            
             return redirect()->route('distribusi.index')->with('success', 'Data distribusi berhasil disimpan dan notifikasi telah dikirim!');
         } catch (ValidationException $e) {
             return redirect()->back()->withInput()->withErrors($e->errors());
         } catch (\Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-    }
-    public function stokInduk()
-    {
-        // Ambil semua data sparepart, urutkan berdasarkan nama, dan paginasi
-        $spareparts = Sparepart::orderBy('nama_part')->paginate(20);
-
-        return view('distribusi.stok-induk', compact('spareparts'));
     }
 }

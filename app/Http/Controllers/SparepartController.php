@@ -6,6 +6,7 @@ use App\Models\Sparepart;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use App\Models\ActivityLog;
 
 
 class SparepartController extends Controller
@@ -181,8 +182,20 @@ class SparepartController extends Controller
     public function toggleStatus(Sparepart $sparepart)
     {
         $sparepart->is_active = !$sparepart->is_active;
-        $sparepart->save();
-        $message = $sparepart->is_active ? 'Data berhasil diaktifkan.' : 'Data berhasil dinonaktifkan.';
+        $actionText = $sparepart->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        
+        Sparepart::withoutEvents(function () use ($sparepart) {
+          $sparepart->save();
+        });
+
+        // Mencatat aktivitas
+        ActivityLog::create([
+            'user_id'     => auth()->id(),
+            'description' => "Data Sparepart '{$sparepart->nama_part}' telah {$actionText}.",
+            'ip_address'  => request()->ip(),
+        ]);
+
+        $message = "Data sparepart berhasil {$actionText}.";
         return redirect()->back()->with('success', $message);
     }
 }

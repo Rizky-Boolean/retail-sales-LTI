@@ -53,7 +53,6 @@
                                     <td class="py-3 px-4">{{ $distribusi->cabangTujuan->nama_cabang ?? '-' }}</td>
                                     <td class="py-3 px-4 text-right">{{ 'Rp ' . number_format($distribusi->total_harga_kirim, 0, ',', '.') }}</td>
                                     
-                                    {{-- [DIKEMBALIKAN] Kolom Status dengan Teks Alasan yang Diperbesar --}}
                                     <td class="py-3 px-4 text-center">
                                         @php
                                             $statusClass = '';
@@ -67,7 +66,6 @@
                                         </span>
 
                                         @if($distribusi->status == 'ditolak' && !empty($distribusi->alasan_penolakan))
-                                            {{-- [DIUBAH] Ukuran font diperbesar dan gaya italic dihilangkan --}}
                                             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">"{{ $distribusi->alasan_penolakan }}"</p>
                                         @endif
                                     </td>
@@ -77,13 +75,18 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr id="initialEmptyRow">
-                                    <td colspan="6" class="text-center py-4 text-gray-500 dark:text-gray-400">Belum ada data distribusi.</td>
+                                <tr>
+                                    @if(request('search'))
+                                        <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            Tidak ada histori yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
+                                        </td>
+                                    @else
+                                        <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            Tidak ada data histori yang aktif.
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforelse
-                            <tr id="noResultsRow" style="display: none;">
-                                <td colspan="6" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data distribusi yang cocok.</td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -96,104 +99,45 @@
         </div>
     </div>
 
-    {{-- Script Search --}}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
-        const tbody = document.querySelector('#distribusiTable tbody');
         let typingTimer;
-        const doneTypingInterval = 300;
+        const doneTypingInterval = 500;
 
+        // Otomatis fokus ke input search jika ada query pencarian di URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSearch = urlParams.get('search');
+        if (currentSearch) {
+            searchInput.value = currentSearch;
+            searchInput.focus();
+            
+            // Trik untuk memindahkan kursor ke akhir
+            const val = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = val;
+        }
+
+        // Listener untuk input, dengan jeda (debounce)
         searchInput.addEventListener('input', function() {
             clearTimeout(typingTimer);
-            typingTimer = setTimeout(performSearch, doneTypingInterval);
+            typingTimer = setTimeout(() => {
+                const currentUrl = new URL(window.location);
+                const searchValue = searchInput.value.trim();
+
+                if (searchValue) {
+                    currentUrl.searchParams.set('search', searchValue);
+                } else {
+                    currentUrl.searchParams.delete('search');
+                }
+                
+                currentUrl.searchParams.set('page', '1');
+                
+                if (window.location.href !== currentUrl.href) {
+                    window.location.href = currentUrl.toString();
+                }
+            }, doneTypingInterval);
         });
-
-        function performSearch() {
-            const searchValue = searchInput.value;
-            const noResultsRow = document.getElementById('noResultsRow');
-            const initialEmptyRow = document.getElementById('initialEmptyRow');
-
-            // Show loading state
-            tbody.classList.add('opacity-50');
-
-            fetch(`/distribusi/search?search=${encodeURIComponent(searchValue)}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Remove loading state
-                    tbody.classList.remove('opacity-50');
-
-                    // Clear existing rows except special rows
-                    const rows = tbody.querySelectorAll('tr:not(#noResultsRow):not(#initialEmptyRow)');
-                    rows.forEach(row => row.remove());
-
-                    if (data.length > 0) {
-                        if (noResultsRow) noResultsRow.style.display = 'none';
-                        if (initialEmptyRow) initialEmptyRow.style.display = 'none';
-
-                        data.forEach(distribusi => {
-                            const row = document.createElement('tr');
-                            row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
-
-                            // Format date
-                            const date = new Date(distribusi.tanggal_distribusi).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                            });
-
-                            // Determine status class
-                            let statusClass = '';
-                            if (distribusi.status === 'dikirim') statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-200';
-                            else if (distribusi.status === 'diterima') statusClass = 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-200';
-                            else if (distribusi.status === 'ditolak') statusClass = 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-200';
-
-                            row.innerHTML = `
-                                <td class="py-3 px-4">DIST-${distribusi.id}</td>
-                                <td class="py-3 px-4">${date}</td>
-                                <td class="py-3 px-4">${distribusi.cabang_tujuan?.nama_cabang || '-'}</td>
-                                <td class="py-3 px-4 text-right">Rp ${Number(distribusi.total_harga_kirim).toLocaleString('id-ID')}</td>
-                                <td class="py-3 px-4 text-center">
-                                    <span class="inline-block px-3 py-1 text-xs font-medium rounded-full ${statusClass}">
-                                        ${distribusi.status.charAt(0).toUpperCase() + distribusi.status.slice(1)}
-                                    </span>
-                                    ${distribusi.status === 'ditolak' && distribusi.alasan_penolakan 
-                                        ? `<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">"${distribusi.alasan_penolakan}"</p>`
-                                        : ''}
-                                </td>
-                                <td class="py-3 px-4 text-center">
-                                    <a href="/distribusi/${distribusi.id}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 py-1 px-2 rounded transition">Detail</a>
-                                </td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                    } else {
-                        if (searchValue && noResultsRow) {
-                            noResultsRow.style.display = '';
-                            if (initialEmptyRow) initialEmptyRow.style.display = 'none';
-                        } else if (initialEmptyRow) {
-                            if (noResultsRow) noResultsRow.style.display = 'none';
-                            initialEmptyRow.style.display = '';
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Search error:', error);
-                    tbody.classList.remove('opacity-50');
-                    const errorRow = document.createElement('tr');
-                    errorRow.innerHTML = `
-                        <td colspan="6" class="text-center py-4 text-red-500">
-                            Terjadi kesalahan saat mencari data. Silakan coba lagi.
-                        </td>
-                    `;
-                    tbody.appendChild(errorRow);
-                });
-        }
     });
     </script>
 </x-app-layout>

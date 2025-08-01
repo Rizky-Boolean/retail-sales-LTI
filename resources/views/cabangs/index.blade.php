@@ -13,7 +13,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     {{-- Search Input --}}
                     <div class="w-full md:w-1/3">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari cabang..."
+                        <input type="text" id="searchInput" placeholder="Cari cabang..."
                             class="block w-full p-2.5 text-base rounded-lg border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 transition duration-150 ease-in-out">
                     </div>
 
@@ -68,13 +68,18 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr id="initialEmptyRow">
-                                    <td colspan="3" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data cabang.</td>
-                                </tr>
-                            @endforelse
-                            <tr id="noResultsRow" style="display: none;">
-                                <td colspan="3" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data cabang yang cocok.</td>
+                            <tr>
+                                @if(request('search'))
+                                    <td colspan="3" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada cabang yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
+                                    </td>
+                                @else
+                                    <td colspan="3" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada data cabang aktif.
+                                    </td>
+                                @endif
                             </tr>
+                        @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -111,34 +116,41 @@
 
     {{-- Script untuk Search --}}
     <script>
-        function filterTable() {
-            let input = document.getElementById("searchInput");
-            let filter = input.value.toUpperCase();
-            let table = document.getElementById("cabangsTable");
-            let tr = table.getElementsByTagName("tr");
-            let noResultsRow = document.getElementById("noResultsRow");
-            let initialEmptyRow = document.getElementById("initialEmptyRow");
-            let foundResults = false;
+        // [DIUBAH] Logika Pencarian Server-side
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            let typingTimer;
+            const doneTypingInterval = 500;
 
-            for (let i = 0; i < tr.length; i++) {
-                if (tr[i].getElementsByTagName("th").length > 0 || tr[i].id === "noResultsRow" || tr[i].id === "initialEmptyRow") continue;
-
-                let foundInRow = false;
-                let tdNama = tr[i].getElementsByTagName("td")[0];
-                let tdAlamat = tr[i].getElementsByTagName("td")[1];
-
-                if (tdNama && tdNama.textContent.toUpperCase().indexOf(filter) > -1) foundInRow = true;
-                if (tdAlamat && tdAlamat.textContent.toUpperCase().indexOf(filter) > -1) foundInRow = true;
-
-                tr[i].style.display = foundInRow ? "" : "none";
-                if (foundInRow) foundResults = true;
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSearch = urlParams.get('search');
+            if (currentSearch) {
+                searchInput.value = currentSearch;
+                searchInput.focus();
             }
 
-            if (noResultsRow) noResultsRow.style.display = foundResults || filter === "" ? "none" : "";
-            if (initialEmptyRow) initialEmptyRow.style.display = filter !== "" ? "none" : (tr.length > 2 ? "" : "none");
-        }
+            searchInput.addEventListener('input', function() {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    const searchValue = searchInput.value.trim();
+                    const currentUrl = new URL(window.location);
 
-        // [TAMBAH] Script untuk Modal
+                    if (searchValue) {
+                        currentUrl.searchParams.set('search', searchValue);
+                    } else {
+                        currentUrl.searchParams.delete('search');
+                    }
+                    
+                    currentUrl.searchParams.set('page', '1');
+
+                    if (window.location.href !== currentUrl.href) {
+                        window.location.href = currentUrl.toString();
+                    }
+                }, doneTypingInterval);
+            });
+        });
+
+        // [TIDAK DIUBAH] Script untuk Modal
         const deactivateModal = document.getElementById('deactivateModal');
         const deactivateForm = document.getElementById('deactivateForm');
         const deactivateModalTitle = document.getElementById('deactivateModalTitle');

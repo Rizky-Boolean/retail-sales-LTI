@@ -109,33 +109,41 @@
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
                             @forelse($spareparts as $sparepart)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 data-row">
-                                    <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->kode_part }}</td>
-                                    <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->nama_part }}</td>
-                                    <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->satuan }}</td>
-                                    <td class="text-right py-3 px-4 whitespace-nowrap" data-price="{{ $sparepart->harga_jual }}">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
-                                    <td class="text-center py-3 px-4 whitespace-nowrap">
-                                        <div class="flex justify-center items-center gap-4">
-                                            <a href="{{ route('spareparts.edit', $sparepart->id) }}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
-                                                <i data-lucide="edit" class="w-4 h-4"></i>
-                                                <span>Edit</span>
-                                            </a>
-                                            {{-- [DIUBAH] Tombol Nonaktifkan kini membuka modal --}}
-                                            <button type="button" onclick="showDeactivateModal('{{ route('spareparts.toggleStatus', $sparepart) }}', '{{ addslashes($sparepart->nama_part) }}')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Nonaktifkan">
-                                                <i data-lucide="power-off" class="w-4 h-4"></i>
-                                                <span>Nonaktifkan</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr id="initialEmptyRow">
-                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data sparepart aktif.</td>
-                                </tr>
-                            @endforelse
-                            <tr id="noResultsRow" class="hidden">
-                                <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">Tidak ada data sparepart yang cocok.</td>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 data-row">
+                                <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->kode_part }}</td>
+                                <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->nama_part }}</td>
+                                <td class="text-left py-3 px-4 whitespace-nowrap">{{ $sparepart->satuan }}</td>
+                                <td class="text-right py-3 px-4 whitespace-nowrap" data-price="{{ $sparepart->harga_jual }}">{{ 'Rp ' . number_format($sparepart->harga_jual, 0, ',', '.') }}</td>
+                                {{-- Kode yang Benar untuk Kolom Aksi --}}
+                                <td class="text-center py-3 px-4 whitespace-nowrap">
+                                    <div class="flex justify-center items-center gap-4">
+                                        {{-- Tombol Edit --}}
+                                        <a href="{{ route('spareparts.edit', $sparepart->id) }}" class="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="Edit">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                            <span>Edit</span>
+                                        </a>
+
+                                        {{-- Tombol Nonaktifkan --}}
+                                        <button type="button" onclick="showDeactivateModal('{{ route('spareparts.toggleStatus', $sparepart) }}', '{{ addslashes($sparepart->nama_part) }}')" class="flex items-center gap-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Nonaktifkan">
+                                            <i data-lucide="power-off" class="w-4 h-4"></i>
+                                            <span>Nonaktifkan</span>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
+                        @empty
+                            <tr>
+                                @if(request('search'))
+                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada data sparepart yang cocok untuk pencarian: "<strong>{{ request('search') }}</strong>"
+                                    </td>
+                                @else
+                                    <td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                        Tidak ada data sparepart aktif.
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -148,8 +156,8 @@
         </div>
     </div>
 
-    {{-- [BARU] Modal Konfirmasi Nonaktifkan --}}
-    <div id="deactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+    {{-- Modal Konfirmasi Nonaktifkan --}}
+    <div id="deactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto">
             <div class="text-center">
                 <svg class="mx-auto mb-4 h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -170,70 +178,95 @@
         </div>
     </div>
 
-    {{-- Script untuk Search, Modal, dan Server-side Sorting --}}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchInput');
-        let typingTimer;
-        const doneTypingInterval = 300;
+{{-- Script untuk Search, Modal, dan Server-side Sorting --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    
+    let typingTimer;
+    const doneTypingInterval = 500; // Jeda 500ms setelah user berhenti mengetik
+    
+    // Set nilai awal dari URL parameter dan atur fokus
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSearch = urlParams.get('search');
+    if (currentSearch) {
+        searchInput.value = currentSearch;
+        // [PERBAIKAN 2] Tambahkan baris ini untuk mengembalikan fokus ke input
+        searchInput.focus(); 
+    }
 
-        searchInput.addEventListener('input', function() {
-            clearTimeout(typingTimer);
-            if (searchInput.value.trim() === '') {
-                // Jika search kosong, reload halaman untuk menampilkan data asli dengan sorting
-                const currentUrl = new URL(window.location);
-                currentUrl.searchParams.delete('search');
-                window.location.href = currentUrl.toString();
-            } else {
-                typingTimer = setTimeout(performSearch, doneTypingInterval);
-            }
-        });
-
-        function performSearch() {
-            const searchValue = searchInput.value;
-            if (searchValue.trim() === '') return;
-            
-            // Redirect ke halaman dengan parameter search (dan pertahankan sorting)
+    // [PERBAIKAN 1] Logika pencarian yang disederhanakan dan diperbaiki
+    searchInput.addEventListener('input', function() {
+        clearTimeout(typingTimer);
+        
+        typingTimer = setTimeout(() => {
+            const searchValue = searchInput.value.trim();
             const currentUrl = new URL(window.location);
-            currentUrl.searchParams.set('search', searchValue);
-            currentUrl.searchParams.set('page', '1'); // Reset ke halaman 1
-            window.location.href = currentUrl.toString();
-        }
+            
+            // Jika ada value, set parameter 'search'
+            if (searchValue) {
+                currentUrl.searchParams.set('search', searchValue);
+            } else {
+                // Jika kosong, hapus parameter 'search'
+                currentUrl.searchParams.delete('search');
+            }
+            
+            // Selalu reset ke halaman 1 saat melakukan pencarian baru
+            currentUrl.searchParams.set('page', '1');
+            
+            // Redirect hanya jika URL-nya berubah untuk menghindari reload yang tidak perlu
+            if (window.location.href !== currentUrl.href) {
+                window.location.href = currentUrl.toString();
+            }
+        }, doneTypingInterval);
     });
+});
 
-    // [BARU] Server-side Sorting Function
-    function sortColumn(column) {
-        const currentUrl = new URL(window.location);
-        const currentSort = currentUrl.searchParams.get('sort');
-        const currentDirection = currentUrl.searchParams.get('direction');
-        
-        let newDirection = 'asc';
-        
-        // Jika klik kolom yang sama, toggle direction
-        if (currentSort === column) {
-            newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-        }
-        
-        // Set parameter sorting
-        currentUrl.searchParams.set('sort', column);
-        currentUrl.searchParams.set('direction', newDirection);
-        currentUrl.searchParams.set('page', '1'); // Reset ke halaman 1
-        
-        // Redirect dengan parameter sorting baru
-        window.location.href = currentUrl.toString();
+// Server-side Sorting Function (Tidak ada perubahan, sudah benar)
+function sortColumn(column) {
+    const currentUrl = new URL(window.location);
+    const currentSort = currentUrl.searchParams.get('sort');
+    const currentDirection = currentUrl.searchParams.get('direction');
+    
+    let newDirection = 'asc';
+    
+    if (currentSort === column) {
+        newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
     }
+    
+    currentUrl.searchParams.set('sort', column);
+    currentUrl.searchParams.set('direction', newDirection);
+    currentUrl.searchParams.set('page', '1');
+    
+    window.location.href = currentUrl.toString();
+}
 
-    // [BARU] Script untuk Modal Nonaktifkan
-    function showDeactivateModal(actionUrl, itemName) {
-        const deactivateForm = document.getElementById('deactivateForm');
-        const deactivateModalTitle = document.getElementById('deactivateModalTitle');
-        deactivateForm.action = actionUrl;
-        deactivateModalTitle.innerHTML = `Anda yakin ingin menonaktifkan <strong>${itemName}</strong>?`;
-        document.getElementById('deactivateModal').classList.remove('hidden');
-    }
+// Script untuk Modal Nonaktifkan (Tidak ada perubahan, sudah benar)
+function showDeactivateModal(actionUrl, itemName) {
+    const deactivateForm = document.getElementById('deactivateForm');
+    const deactivateModalTitle = document.getElementById('deactivateModalTitle');
+    const deactivateModal = document.getElementById('deactivateModal');
+    
+    deactivateForm.action = actionUrl;
+    deactivateModalTitle.innerHTML = `Anda yakin ingin menonaktifkan <strong>${itemName}</strong>?`;
+    deactivateModal.style.display = 'flex';
+}
 
-    function hideDeactivateModal() {
-        document.getElementById('deactivateModal').classList.add('hidden');
+function hideDeactivateModal() {
+    const deactivateModal = document.getElementById('deactivateModal');
+    deactivateModal.style.display = 'none';
+}
+
+document.getElementById('deactivateModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideDeactivateModal();
     }
-    </script>
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideDeactivateModal();
+    }
+});
+</script>
 </x-app-layout>

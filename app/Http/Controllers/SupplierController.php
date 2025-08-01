@@ -4,35 +4,37 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use App\Models\ActivityLog;
+
 
 class SupplierController extends Controller
 {
     /**
-     * Menampilkan daftar semua supplier.
+     * Menampilkan daftar semua supplier, termasuk menangani pencarian dan pagination.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $suppliers = Supplier::active()->latest()->paginate(10);
+        // Mulai query untuk supplier yang aktif
+        $query = Supplier::query()->where('is_active', true);
+
+        // [PERUBAHAN] Terapkan filter pencarian jika ada input dari URL
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('nama_supplier', 'like', "%{$search}%")
+                  ->orWhere('alamat', 'like', "%{$search}%")
+                  ->orWhere('kontak', 'like', "%{$search}%");
+            });
+        }
+
+        // [PERUBAHAN] Ambil data dengan pagination dan sertakan query string (untuk search)
+        $suppliers = $query->latest()->paginate(10)->withQueryString();
+
         return view('suppliers.index', compact('suppliers'));
     }
-    public function search(Request $request)
-    {
-        $search = $request->get('search');
-        
-        $suppliers = Supplier::where('nama_supplier', 'LIKE', "%{$search}%")
-            ->orWhere('alamat', 'LIKE', "%{$search}%")
-            ->orWhere('kontak', 'LIKE', "%{$search}%")
-            ->get();
-            
-        return response()->json($suppliers);
-    }
 
-    /**
-     * Menampilkan form untuk membuat supplier baru.
-     */
     public function create()
     {
-        // Cukup tampilkan view 'suppliers.create'
         return view('suppliers.create');
     }
 
@@ -55,7 +57,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * Menampilkan data spesifik dari satu supplier (tidak kita gunakan, tapi biarkan ada).
+     * Menampilkan data spesifik dari satu supplier.
      */
     public function show(Supplier $supplier)
     {
@@ -87,20 +89,39 @@ class SupplierController extends Controller
 
         return redirect()->route('suppliers.index')->with('success', 'Data supplier berhasil diperbarui!');
     }
+
+    /**
+     * Menampilkan data supplier yang tidak aktif.
+     */
     public function inactive()
     {
+        // [PERBAIKAN KECIL] Menggunakan scope `inactive()` jika ada, atau where()
         $suppliers = Supplier::where('is_active', false)->latest()->paginate(10);
         return view('suppliers.inactive', compact('suppliers'));
     }
 
     /**
-     * [BARU] Mengubah status aktif/nonaktif.
+     * Mengubah status aktif/nonaktif supplier.
      */
     public function toggleStatus(Supplier $supplier)
     {
         $supplier->is_active = !$supplier->is_active;
-        $supplier->save();
-        $message = $supplier->is_active ? 'Data supplier berhasil diaktifkan.' : 'Data supplier berhasil dinonaktifkan.';
+
+        // Tentukan teks aksi sebelum disimpan
+        $actionText = $supplier->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+        Supplier::withoutEvents(function () use ($supplier) {
+            $supplier->save();
+        });
+
+        // [TAMBAH] Logika untuk mencatat aktivitas
+        ActivityLog::create([
+            'user_id'     => auth()->id(),
+            'description' => "Data Supplier '{$supplier->nama_supplier}' telah {$actionText}.",
+            'ip_address'  => request()->ip(),
+        ]);
+
+        $message = "Data supplier berhasil {$actionText}.";
         return redirect()->back()->with('success', $message);
     }
 }
