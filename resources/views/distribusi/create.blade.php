@@ -245,8 +245,7 @@
 
                     if (selectedSparepart) {
                         this.items[index].stok_induk = selectedSparepart.stok_induk;
-                        // [UBAH] Harga kirim sekarang sama dengan harga modal, tanpa dikali 1.11
-                        this.items[index].harga_kirim = selectedSparepart.harga_modal_terakhir;
+                        this.items[index].harga_kirim = selectedSparepart.harga_jual;;
                     } else {
                         this.items[index].stok_induk = 0;
                         this.items[index].harga_kirim = 0;

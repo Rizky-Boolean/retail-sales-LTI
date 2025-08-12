@@ -34,7 +34,7 @@
                         </div>
 
                         <!-- Cabang (Hanya tampil jika rolenya admin cabang) -->
-                        @if($user->role === 'admin_cabang')
+                        @if($user->role === 'admin_gudang_cabang')
                         <div class="mt-4">
                             <x-input-label for="cabang_id" :value="__('Penempatan Cabang')" />
                             <select name="cabang_id" id="cabang_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-sm">
@@ -47,16 +47,43 @@
                         </div>
                         @endif
                         
-                        <!-- Password (Opsional) -->
-                        <div class="mt-4">
+                        <!-- [DIUBAH] Password (Opsional) -->
+                        <div class="mt-4" x-data="{ show: false }">
                             <x-input-label for="password" :value="__('Password Baru (Kosongkan jika tidak diubah)')" />
-                            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" autocomplete="new-password" />
+                            <div class="relative">
+                                <input id="password" class="block mt-1 w-full pr-10 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-sm"
+                                       :type="show ? 'text' : 'password'"
+                                       name="password" autocomplete="new-password" />
+                                <button type="button" @click="show = !show" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500">
+                                    <svg x-show="show" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 17.057 2.458 12z" />
+                                    </svg>
+                                    <svg x-show="!show" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a9.97 9.97 0 01-1.563 3.029m0 0l-3.59-3.59m0 0l-3.59 3.59" />
+                                    </svg>
+                                </button>
+                            </div>
                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                         </div>
-                        <!-- Confirm Password -->
-                        <div class="mt-4">
+                        
+                        <!-- [DIUBAH] Confirm Password -->
+                        <div class="mt-4" x-data="{ show: false }">
                             <x-input-label for="password_confirmation" :value="__('Konfirmasi Password Baru')" />
-                            <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" />
+                            <div class="relative">
+                                <input id="password_confirmation" class="block mt-1 w-full pr-10 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-sm"
+                                       :type="show ? 'text' : 'password'"
+                                       name="password_confirmation" />
+                                <button type="button" @click="show = !show" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500">
+                                    <svg x-show="show" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 17.057 2.458 12z" />
+                                    </svg>
+                                    <svg x-show="!show" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a9.97 9.97 0 01-1.563 3.029m0 0l-3.59-3.59m0 0l-3.59 3.59" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="flex items-center justify-end mt-4">

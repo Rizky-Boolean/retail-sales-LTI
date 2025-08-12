@@ -57,8 +57,7 @@
                         type="email"
                         id="email"
                         name="email"
-                        {{-- [TAMBAHKAN] :value="old('email')" untuk menyimpan input setelah error --}}
-                        :value="old('email')"
+                        value="{{ old('email') }}" 
                         class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
                         placeholder="Masukkan email anda"
                         required
