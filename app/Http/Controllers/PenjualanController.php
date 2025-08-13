@@ -107,16 +107,47 @@ class PenjualanController extends Controller
                     'total_ppn_penjualan' => $ppnNominal,
                     'total_final' => $totalFinal,
                 ]);
-                
-                // 4. Proses detail penjualan
+
+                // 4. Proses detail penjualan - HPP DARI PEMBELIAN AKTUAL
                 foreach ($validated['details'] as $item) {
                     $sparepart = $cabang->spareparts()->find($item['sparepart_id']);
                     $qty = $item['qty'];
                     
-                    $distribusiDetail = DistribusiDetail::where('sparepart_id', $sparepart->id)
-                                                          ->latest('created_at')->first();
-                    $hpp = $distribusiDetail->harga_kirim_satuan ?? 0;
-
+                    // HPP BERDASARKAN PEMBELIAN AKTUAL PER SUPPLIER
+                    $hpp = 0;
+                    $hpp_source = '';
+                    
+                    // PRIORITAS 1: Ambil HPP dari pembelian terakhir (StokMasuk)
+                    $stokMasukDetail = DB::table('stok_masuk_details')
+                        ->join('stok_masuks', 'stok_masuk_details.stok_masuk_id', '=', 'stok_masuks.id')
+                        ->where('stok_masuk_details.sparepart_id', $sparepart->id)
+                        ->orderBy('stok_masuks.tanggal_masuk', 'desc')
+                        ->select('stok_masuk_details.*', 'stok_masuks.tanggal_masuk')
+                        ->first();
+                    
+                    if ($stokMasukDetail && $stokMasukDetail->harga_beli_satuan > 0) {
+                        $hpp = $stokMasukDetail->harga_beli_satuan;
+                        $hpp_source = 'pembelian_terakhir';
+                    } else {
+                        // PRIORITAS 2: Cari dari distribusi detail (harga_modal_satuan)
+                        $distribusiDetail = DistribusiDetail::join('distribusis', 'distribusi_details.distribusi_id', '=', 'distribusis.id')
+                            ->where('distribusi_details.sparepart_id', $sparepart->id)
+                            ->where('distribusis.cabang_id_tujuan', $cabang->id)
+                            ->where('distribusis.status', 'selesai')
+                            ->orderBy('distribusis.tanggal_distribusi', 'desc')
+                            ->select('distribusi_details.*')
+                            ->first();
+                        
+                        if ($distribusiDetail && $distribusiDetail->harga_modal_satuan > 0) {
+                            $hpp = $distribusiDetail->harga_modal_satuan;
+                            $hpp_source = 'distribusi_harga_modal';
+                        } else {
+                            // PRIORITAS 3: Fallback estimasi 60% dari harga jual
+                            $hpp = $sparepart->harga_jual * 0.6;
+                            $hpp_source = 'estimasi_60_persen';
+                        }
+                    }
+                    // Simpan detail penjualan
                     $penjualan->details()->create([
                         'sparepart_id' => $sparepart->id,
                         'qty' => $qty,

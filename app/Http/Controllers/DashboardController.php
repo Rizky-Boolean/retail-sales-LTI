@@ -128,68 +128,89 @@ class DashboardController extends Controller
     /**
      * Mengambil data untuk dashboard Admin Gudang Cabang.
      */
+
     private function getDataForAdminGudangCabang($user)
     {
         $cabangId = $user->cabang_id;
 
         // Penjualan hari ini
         $penjualanHariIni = Penjualan::where('cabang_id', $cabangId)
-                                      ->whereDate('tanggal_penjualan', Carbon::today())
-                                      ->sum('total_final');
+                                    ->whereDate('tanggal_penjualan', Carbon::today())
+                                    ->sum('total_final');
 
-        // Keuntungan bulan ini
-        $penjualanBulanIni = Penjualan::where('cabang_id', $cabangId)
-                                        ->whereMonth('tanggal_penjualan', Carbon::now()->month)
-                                        ->whereYear('tanggal_penjualan', Carbon::now()->year)
-                                        ->with('details')
-                                        ->get();
-        
-        $keuntunganBulanIni = $penjualanBulanIni->reduce(function ($carry, $penjualan) {
-            $labaPerNota = $penjualan->details->sum(function ($detail) { return ($detail->harga_jual_satuan - $detail->hpp_satuan) * $detail->qty; });
-            return $carry + $labaPerNota;
-        }, 0);
+        // Keuntungan bulan ini - dengan error handling
+        $keuntunganBulanIni = 0;
+        try {
+            $keuntunganBulanIni = DB::table('penjualan_details')
+                ->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')
+                ->where('penjualans.cabang_id', $cabangId)
+                ->whereMonth('penjualans.tanggal_penjualan', Carbon::now()->month)
+                ->whereYear('penjualans.tanggal_penjualan', Carbon::now()->year)
+                ->sum(DB::raw('(penjualan_details.harga_jual_satuan - penjualan_details.hpp_satuan) * penjualan_details.qty'));
+            
+            // Pastikan hasil tidak null
+            $keuntunganBulanIni = $keuntunganBulanIni ?? 0;
+            
+        } catch (\Exception $e) {
+            \Log::error('Error menghitung keuntungan: ' . $e->getMessage());
+            $keuntunganBulanIni = 0;
+        }
 
-         // [FIXED] Stok hampir habis di cabang, tidak termasuk stok 0
-        $stokHampirHabisCabang = DB::table('cabang_sparepart')
-            ->join('spareparts', 'cabang_sparepart.sparepart_id', '=', 'spareparts.id')
-            ->select('spareparts.nama_part', 'cabang_sparepart.stok')
-            ->where('cabang_sparepart.cabang_id', $cabangId)
-            ->where('cabang_sparepart.stok', '>', 0) // <-- Tambahkan kondisi ini
-            ->where('cabang_sparepart.stok', '<', 10)
-            ->orderBy('cabang_sparepart.stok', 'asc')
-            ->take(5)
-            ->get();
+        // Stok hampir habis di cabang
+        $stokHampirHabisCabang = collect(); // Default empty collection
+        try {
+            $stokHampirHabisCabang = DB::table('cabang_sparepart')
+                ->join('spareparts', 'cabang_sparepart.sparepart_id', '=', 'spareparts.id')
+                ->select('spareparts.nama_part', 'cabang_sparepart.stok')
+                ->where('cabang_sparepart.cabang_id', $cabangId)
+                ->where('cabang_sparepart.stok', '>', 0)
+                ->where('cabang_sparepart.stok', '<', 10)
+                ->orderBy('cabang_sparepart.stok', 'asc')
+                ->take(5)
+                ->get();
+        } catch (\Exception $e) {
+            \Log::error('Error mengambil stok hampir habis: ' . $e->getMessage());
+        }
 
-        // [BARU] Data untuk Grafik Komposisi Penjualan (Sparepart Terlaris Bulan Ini)
-        $sparepartTerlaris = DB::table('penjualan_details')
-            ->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')
-            ->join('spareparts', 'penjualan_details.sparepart_id', '=', 'spareparts.id')
-            ->select('spareparts.nama_part', DB::raw('SUM(penjualan_details.qty) as total_terjual'))
-            ->where('penjualans.cabang_id', $cabangId)
-            ->whereMonth('penjualans.tanggal_penjualan', Carbon::now()->month)
-            ->whereYear('penjualans.tanggal_penjualan', Carbon::now()->year)
-            ->groupBy('spareparts.nama_part')
-            ->orderBy('total_terjual', 'desc')
-            ->take(5)
-            ->get();
+        // Data untuk Grafik Komposisi Penjualan
+        $sparepartTerlaris = collect(); // Default empty collection
+        try {
+            $sparepartTerlaris = DB::table('penjualan_details')
+                ->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')
+                ->join('spareparts', 'penjualan_details.sparepart_id', '=', 'spareparts.id')
+                ->select('spareparts.nama_part', DB::raw('SUM(penjualan_details.qty) as total_terjual'))
+                ->where('penjualans.cabang_id', $cabangId)
+                ->whereMonth('penjualans.tanggal_penjualan', Carbon::now()->month)
+                ->whereYear('penjualans.tanggal_penjualan', Carbon::now()->year)
+                ->groupBy('spareparts.nama_part')
+                ->orderBy('total_terjual', 'desc')
+                ->take(5)
+                ->get();
+        } catch (\Exception $e) {
+            \Log::error('Error mengambil sparepart terlaris: ' . $e->getMessage());
+        }
 
-        // [BARU] Data untuk Daftar Stok Mati (Slow-Moving Items)
-        $slowMovingItems = DB::table('cabang_sparepart')
-            ->join('spareparts', 'cabang_sparepart.sparepart_id', '=', 'spareparts.id')
-            ->leftJoin('penjualan_details', function ($join) use ($cabangId) {
-                $join->on('cabang_sparepart.sparepart_id', '=', 'penjualan_details.sparepart_id')
-                     ->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')
-                     ->where('penjualans.cabang_id', '=', $cabangId)
-                     ->where('penjualans.tanggal_penjualan', '>=', Carbon::now()->subDays(90));
-            })
-            ->select('spareparts.nama_part', 'cabang_sparepart.stok', DB::raw('IFNULL(SUM(penjualan_details.qty), 0) as total_terjual_90_hari'))
-            ->where('cabang_sparepart.cabang_id', $cabangId)
-            ->where('cabang_sparepart.stok', '>', 0) // Hanya tampilkan yang masih ada stok
-            ->groupBy('spareparts.nama_part', 'cabang_sparepart.stok')
-            ->orderBy('total_terjual_90_hari', 'asc')
-            ->take(5)
-            ->get();
-
+        // Data untuk Daftar Stok Mati
+        $slowMovingItems = collect(); // Default empty collection
+        try {
+            $slowMovingItems = DB::table('cabang_sparepart')
+                ->join('spareparts', 'cabang_sparepart.sparepart_id', '=', 'spareparts.id')
+                ->leftJoin('penjualan_details', function ($join) use ($cabangId) {
+                    $join->on('cabang_sparepart.sparepart_id', '=', 'penjualan_details.sparepart_id')
+                        ->join('penjualans', 'penjualan_details.penjualan_id', '=', 'penjualans.id')
+                        ->where('penjualans.cabang_id', '=', $cabangId)
+                        ->where('penjualans.tanggal_penjualan', '>=', Carbon::now()->subDays(90));
+                })
+                ->select('spareparts.nama_part', 'cabang_sparepart.stok', DB::raw('IFNULL(SUM(penjualan_details.qty), 0) as total_terjual_90_hari'))
+                ->where('cabang_sparepart.cabang_id', $cabangId)
+                ->where('cabang_sparepart.stok', '>', 0)
+                ->groupBy('spareparts.nama_part', 'cabang_sparepart.stok')
+                ->orderBy('total_terjual_90_hari', 'asc')
+                ->take(5)
+                ->get();
+        } catch (\Exception $e) {
+            \Log::error('Error mengambil slow moving items: ' . $e->getMessage());
+        }
 
         return [
             'penjualanHariIni' => $penjualanHariIni,
@@ -197,7 +218,7 @@ class DashboardController extends Controller
             'kirimanMenunggu' => Distribusi::where('cabang_id_tujuan', $cabangId)->where('status', 'dikirim')->count(),
             'stokHampirHabis' => $stokHampirHabisCabang,
             'penjualanTerbaru' => Penjualan::where('cabang_id', $cabangId)->latest()->take(5)->get(),
-            'chartSparepartTerlaris' => $sparepartTerlaris, // Diubah namanya untuk kejelasan
+            'chartSparepartTerlaris' => $sparepartTerlaris,
             'slowMovingItems' => $slowMovingItems,
         ];
     }
