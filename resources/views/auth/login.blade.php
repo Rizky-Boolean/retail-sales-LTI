@@ -38,7 +38,6 @@
         <div class="w-1/2 p-10 flex flex-col justify-center">
             <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Log In</h2>
             
-            {{-- [TAMBAHKAN] Blok untuk menampilkan pesan error validasi --}}
             @if ($errors->any())
                 <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm" role="alert">
                     <ul>

@@ -152,7 +152,6 @@
         </div>
     </div>
 
-    {{-- Ganti seluruh script Anda dengan ini --}}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');

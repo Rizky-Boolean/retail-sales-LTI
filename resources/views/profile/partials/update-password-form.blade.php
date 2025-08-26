@@ -12,7 +12,6 @@
         @csrf
         @method('PUT')
 
-        {{-- Password Saat Ini --}}
         <div x-data="{ show: false }">
             <x-input-label for="current_password" :value="__('Password Saat Ini')" />
             <div class="relative mt-1">
@@ -25,7 +24,6 @@
             <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
         </div>
 
-        {{-- Password Baru --}}
         <div x-data="{ show: false }">
             <x-input-label for="password" :value="__('Password Baru')" />
             <div class="relative mt-1">

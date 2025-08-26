@@ -5,7 +5,6 @@
         </h2>
     </x-slot>
 
-    {{-- [UBAH] Tambahkan kondisi untuk session 'status' --}}
     <div class="py-5" 
          x-data="{ tab: 'profile' }" 
          x-init="

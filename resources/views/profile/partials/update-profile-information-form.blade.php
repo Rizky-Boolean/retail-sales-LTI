@@ -9,7 +9,6 @@
         </p>
     </header>
 
-    {{-- Form Kirim Ulang Verifikasi Email --}}
     <form id="send-verification" method="POST" action="{{ route('verification.send') }}">
         @csrf
     </form>
@@ -19,7 +18,6 @@
         @csrf
         @method('PATCH')
 
-        {{-- Nama (Tanpa Ikon dan Space) --}}
         <div>
             <x-input-label for="name" :value="__('Nama Lengkap')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full"
@@ -27,14 +25,12 @@
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
-        {{-- Email (Tanpa Ikon dan Space) --}}
         <div>
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full"
                 :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
-            {{-- Notifikasi jika email belum terverifikasi --}}
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail())
                 <div class="p-4 mt-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-800" role="alert">
                     <div class="flex items-center">

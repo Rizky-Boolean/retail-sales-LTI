@@ -72,8 +72,23 @@
 
                 {{-- Grup Tombol Aksi Kanan --}}
                 <div class="flex items-center space-x-2">
-                    <button onclick="printInvoice()" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gray-600 rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition">
-                        <span>Cetak Bukti</span>
+                    {{-- Tombol Cetak Dinamis --}}
+                    <button onclick="printInvoice()" 
+                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white rounded-lg shadow-md transition
+                        @if($distribusi->status === 'ditolak') 
+                            bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500
+                        @else
+                            bg-gray-600 hover:bg-gray-700 focus:ring-gray-500
+                        @endif
+                        focus:outline-none focus:ring-2 focus:ring-offset-2">
+
+                        <span>
+                            @if($distribusi->status === 'ditolak')
+                                Cetak Catatan Penolakan
+                            @else
+                                Cetak Bukti
+                            @endif
+                        </span>
                     </button>
 
                     {{-- Tombol Terima/Tolak (Hanya untuk Admin Cabang & Status Dikirim) --}}
@@ -247,20 +262,33 @@
                         </table>
                     </div>
 
+                    @if($distribusi->status === 'ditolak' && !empty($distribusi->alasan_penolakan))
+                    <div class="mt-8">
+                        <div class="border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-r-lg" role="alert">
+                            <h4 class="font-bold text-red-800 dark:text-red-300">Kiriman Ini Ditolak</h4>
+                            <p class="mt-1 text-sm font-semibold text-gray-700 dark:text-gray-400">Alasan Penolakan:</p>
+                            <blockquote class="mt-2 text-sm text-gray-800 dark:text-gray-200 italic">
+                                "{{ $distribusi->alasan_penolakan }}"
+                            </blockquote>
+                        </div>
+                    </div>
+                @endif
+
+                    @if($distribusi->status !== 'ditolak')
                     {{-- Tanda Tangan --}}
                     <div class="flex justify-between mt-16">
                         <div class="text-center w-1/2">
                             <p class="text-sm text-gray-600 dark:text-gray-300">Disiapkan Oleh,</p>
                             <p class="mt-16 text-gray-800 dark:text-gray-200">____________________</p>
-                            {{-- Nama diganti dengan titik-titik untuk diisi manual --}}
                             <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-1">( .............................. )</p>
                         </div>
                         <div class="text-center w-1/2">
                             <p class="text-sm text-gray-600 dark:text-gray-300">Diterima Oleh,</p>
                             <p class="mt-16 text-gray-800 dark:text-gray-200">____________________</p>
-                            {{-- Anda bisa melakukan hal yang sama untuk penerima jika perlu --}}
                             <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-1">( .............................. )</p>
                         </div>
+                    </div>
+                @endif
                     </div>
                 </div>
             </div>

@@ -23,16 +23,12 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                             <div>
                                 <x-input-label for="tanggal_masuk" :value="__('Tanggal Masuk')" />
-                                {{-- [MODIFIKASI] Tambahkan atribut max untuk validasi tanggal --}}
                                 <x-text-input id="tanggal_masuk" name="tanggal_masuk" type="date" class="mt-1 block w-full"
                                     :value="old('tanggal_masuk', date('Y-m-d'))" max="{{ date('Y-m-d') }}" required />
                                 <x-input-error class="mt-2" :messages="$errors->get('tanggal_masuk')" />
                             </div>
-                            {{-- [MODIFIKASI] Ubah dropdown supplier menjadi searchable dropdown --}}
                             <div class="relative">
                                 <x-input-label for="supplier_id" :value="__('Supplier')" />
-                                
-                                {{-- Hidden input untuk menyimpan nilai yang dipilih --}}
                                 <input type="hidden" name="supplier_id" x-model="selectedSupplierId">
                                 
                                 {{-- Input pencarian --}}
@@ -154,7 +150,6 @@
                                                     class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-right text-gray-700 dark:text-gray-200"
                                                     readonly>
                                             </td>
-                                            {{-- [MODIFIKASI] Tambahkan tombol hapus --}}
                                             <td class="px-4 py-2 text-center">
                                                 <button type="button" 
                                                         @click="removeDetail(index)" 
@@ -177,7 +172,7 @@
                                     </tr>
                                     <tr>
                                         <td colspan="3" class="text-right font-bold py-2 px-4">Total Pembelian</td>
-                                        <td class="py-2 px-4 font-medium text-right" colspan="2"> {{-- [UBAH] Colspan menjadi 2 --}}
+                                        <td class="py-2 px-4 font-medium text-right" colspan="2">
                                             <span x-text="formatCurrency(totalPembelian)"></span>
                                         </td>
                                     </tr>
@@ -189,13 +184,13 @@
                                                 <span class="ml-2">Kenakan PPN 11%</span>
                                             </label>
                                         </td>
-                                        <td class="py-2 px-4 text-right" colspan="2"> {{-- [UBAH] Colspan menjadi 2 --}}
+                                        <td class="py-2 px-4 text-right" colspan="2">
                                             <span x-text="formatCurrency(ppn)"></span>
                                         </td>
                                     </tr>
                                     <tr class="border-t-2 border-gray-300 dark:border-gray-600">
                                         <td colspan="3" class="text-right text-lg font-bold py-2 px-4">Total Final</td>
-                                        <td class="py-2 px-4 text-lg font-bold text-right" colspan="2"> {{-- [UBAH] Colspan menjadi 2 --}}
+                                        <td class="py-2 px-4 text-lg font-bold text-right" colspan="2">
                                             <span x-text="formatCurrency(totalFinal)"></span>
                                         </td>
                                     </tr>

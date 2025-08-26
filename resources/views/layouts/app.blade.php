@@ -38,7 +38,11 @@
         
         {{-- [TAMBAHKAN] Library JS untuk Tom-Select --}}
         <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-        
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script>
+        lucide.createIcons();
+        </script>
+
         @stack('scripts')
     </body>
 </html>

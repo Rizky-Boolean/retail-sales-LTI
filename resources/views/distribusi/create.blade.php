@@ -106,7 +106,6 @@
                             <tbody>
                                 <template x-for="(item, index) in items" :key="index">
                                     <tr class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                                        {{-- [MODIFIKASI] Ubah dropdown sparepart menjadi searchable dropdown --}}
                                         <td class="py-3 px-4 relative">
                                             {{-- Hidden input untuk menyimpan nilai yang dipilih --}}
                                             <input type="hidden" :name="`details[${index}][sparepart_id]`" x-model="item.sparepart_id">
@@ -163,7 +162,6 @@
                                         <td class="py-3 px-4 text-right">
                                             <input type="text" :value="formatCurrency(item.qty * item.harga_kirim)" class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-right" readonly>
                                         </td>
-                                        {{-- [UBAH] Tombol hapus diperbarui --}}
                                         <td class="py-2 px-4 text-center">
                                             <template x-if="items.length > 1">
                                                 <button type="button" 
