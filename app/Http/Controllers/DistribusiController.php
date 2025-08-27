@@ -124,7 +124,7 @@ class DistribusiController extends Controller
 
                         // [DIUBAH] Logika pengambilan harga
                         $hargaModal = $sparepart->harga_modal_terakhir;
-                        $hargaKirim = $sparepart->harga_jual; // Mengambil harga jual yang sudah di-markup
+                        $hargaKirim = $sparepart->harga_beli_terakhir; // Mengambil harga jual yang sudah di-markup
 
                         $distribusi->details()->create([
                             'sparepart_id' => $sparepart->id, 'qty' => $qty,

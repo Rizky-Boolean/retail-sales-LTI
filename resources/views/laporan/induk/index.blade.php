@@ -53,6 +53,20 @@
                             </div>
                             <p class="text-sm text-gray-600 dark:text-gray-400">Melihat rekapitulasi penjualan dari semua cabang.</p>
                         </a>
+                        
+                        {{-- [MODIFIKASI] Card: Laporan Cash Flow (Hanya untuk Super Admin) --}}
+                        @if(auth()->user()->role == 'super_admin')
+                        <a href="{{ route('laporan.induk.cashflow') }}" class="block bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-lg">
+                                    <i data-lucide="scale" class="w-6 h-6 text-indigo-600 dark:text-indigo-400"></i>
+                                </div>
+                                <h4 class="font-bold text-lg text-gray-800 dark:text-gray-200">Laporan Cash Flow</h4>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Membandingkan total pemasukan dan pengeluaran perusahaan.</p>
+                        </a>
+                        @endif
+                        
                     </div>
                 </div>
 
@@ -95,7 +109,6 @@
         </div>
     </div>
 
-    {{-- [PERBAIKAN] Menambahkan script Lucide Icons --}}
     @push('scripts')
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>

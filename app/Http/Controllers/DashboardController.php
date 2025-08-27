@@ -44,14 +44,16 @@ class DashboardController extends Controller
         $totalStokCabang = DB::table('cabang_sparepart')->sum('stok');
 
         // --- Data untuk Grafik ---
-        // 1. Grafik Pengeluaran (6 bulan terakhir)
+        // 1. Grafik Pengeluaran (6 bulan terakhir) - PERBAIKAN
         $pengeluaranData = StokMasuk::select(
+            DB::raw("DATE_FORMAT(tanggal_masuk, '%Y-%m') as periode"),
             DB::raw("DATE_FORMAT(tanggal_masuk, '%b') as bulan"),
             DB::raw("SUM(total_final) as total")
         )
         ->where('tanggal_masuk', '>=', Carbon::now()->subMonths(5)->startOfMonth())
-        ->groupBy('bulan')
-        ->orderByRaw("MIN(tanggal_masuk)")
+        ->where('tanggal_masuk', '<=', Carbon::now()->endOfMonth()) // Pastikan termasuk bulan ini
+        ->groupBy('periode', 'bulan')
+        ->orderBy('periode', 'asc') // Urutkan berdasarkan periode (tahun-bulan)
         ->get();
 
         // 2. Grafik Keuntungan (6 bulan terakhir)

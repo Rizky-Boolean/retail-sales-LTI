@@ -218,4 +218,26 @@ class LaporanController extends Controller
             'cabangId' // Kirim ID cabang yang dipilih untuk ditampilkan di filter
         ));
     }
+    public function cashflowInduk(Request $request)
+    {
+        // Tentukan rentang tanggal default (bulan ini)
+        $tanggalAwal = $request->input('tanggal_awal', Carbon::now()->startOfMonth()->toDateString());
+        $tanggalAkhir = $request->input('tanggal_akhir', Carbon::now()->endOfMonth()->toDateString());
+
+        // 1. Ambil data PEMASUKAN dari total penjualan di SEMUA CABANG
+        $pemasukan = Penjualan::whereBetween('tanggal_penjualan', [$tanggalAwal, $tanggalAkhir])->get();
+        $totalPemasukan = $pemasukan->sum('total_final');
+
+        // 2. Ambil data PENGELUARAN dari pembelian stok ke SUPPLIER
+        $pengeluaran = StokMasuk::whereBetween('tanggal_masuk', [$tanggalAwal, $tanggalAkhir])->get();
+        $totalPengeluaran = $pengeluaran->sum('total_final');
+
+        // 3. Hitung Arus Kas Bersih
+        $arusKasBersih = $totalPemasukan - $totalPengeluaran;
+
+        return view('laporan.induk.cashflow', compact(
+            'pemasukan', 'pengeluaran', 'totalPemasukan', 'totalPengeluaran',
+            'arusKasBersih', 'tanggalAwal', 'tanggalAkhir'
+        ));
+    }
 }

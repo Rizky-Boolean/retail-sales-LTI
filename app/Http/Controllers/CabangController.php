@@ -183,10 +183,21 @@ class CabangController extends Controller
                 $cabang = $distribusi->cabangTujuan;
                 $stokCabang = $cabang->spareparts()->where('sparepart_id', $detail->sparepart_id)->first();
 
+                // Ambil harga kirim dari detail distribusi, ini akan jadi harga modal di cabang
+                $hargaModalCabang = $detail->harga_kirim_satuan;
+
                 if ($stokCabang) {
-                    $cabang->spareparts()->updateExistingPivot($detail->sparepart_id, ['stok' => $stokCabang->pivot->stok + $detail->qty]);
+                    // JIKA SPAREPART SUDAH ADA, UPDATE STOK DAN HARGA MODAL
+                    $cabang->spareparts()->updateExistingPivot($detail->sparepart_id, [
+                        'stok' => $stokCabang->pivot->stok + $detail->qty,
+                        'harga_modal' => $hargaModalCabang // [MODIFIKASI] Tambahkan ini
+                    ]);
                 } else {
-                    $cabang->spareparts()->attach($detail->sparepart_id, ['stok' => $detail->qty]);
+                    // JIKA SPAREPART BARU, TAMBAHKAN DENGAN STOK DAN HARGA MODAL
+                    $cabang->spareparts()->attach($detail->sparepart_id, [
+                        'stok' => $detail->qty,
+                        'harga_modal' => $hargaModalCabang // [MODIFIKASI] Tambahkan ini
+                    ]);
                 }
             }
             $distribusi->update(['status' => 'diterima']);
@@ -204,7 +215,7 @@ class CabangController extends Controller
             Notification::send($recipients, new ShipmentReceivedNotification($distribusi, Auth::user()->name));
         }
 
-        return redirect()->route('cabang.penerimaan.index')->with('success', 'Barang berhasil diterima dan stok telah ditambahkan.');
+        return redirect()->route('cabang.penerimaan.index')->with('success', 'Barang berhasil diterima dan stok serta harga modal telah diperbarui.');
     }
 
     public function tolakBarang(Request $request, Distribusi $distribusi)

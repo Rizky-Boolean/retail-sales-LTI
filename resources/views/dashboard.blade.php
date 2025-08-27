@@ -429,47 +429,147 @@
         @if(auth()->user()->role === 'super_admin')
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
+            // Ganti bagian JavaScript untuk grafik pengeluaran di dashboard.blade.php:
+
             document.addEventListener('DOMContentLoaded', function () {
                 // Data dari Controller
                 const pengeluaranData = @json($chartPengeluaran ?? []);
                 const keuntunganData = @json($chartKeuntungan ?? []);
                 const distribusiStokData = @json($chartDistribusiStok ?? []);
 
-                // Fungsi untuk membuat label bulan
+                // Debug: Lihat data yang diterima
+                console.log('Data Pengeluaran:', pengeluaranData);
+
+                // Fungsi untuk membuat label bulan (PERBAIKAN)
                 const last6Months = Array.from({length: 6}, (v, i) => {
                     const d = new Date();
                     d.setMonth(d.getMonth() - i);
-                    return d.toLocaleString('id-ID', { month: 'short' });
+                    return d.toLocaleString('en', { month: 'short' }); // Gunakan 'en' untuk konsistensi dengan query DB
                 }).reverse();
 
-                // Memproses data agar sesuai dengan label
+                console.log('Label Bulan:', last6Months);
+
+                // Memproses data agar sesuai dengan label (PERBAIKAN)
                 const processData = (data, labels) => {
-                    const dataMap = new Map(data.map(item => [item.bulan, item.total || item.total_profit]));
-                    return labels.map(label => dataMap.get(label) || 0);
+                    console.log('Processing data:', data);
+                    const dataMap = new Map();
+                    
+                    data.forEach(item => {
+                        // Pastikan key menggunakan properti yang benar
+                        const key = item.bulan; // atau item.periode jika diperlukan
+                        const value = item.total || item.total_profit || 0;
+                        dataMap.set(key, value);
+                    });
+                    
+                    console.log('Data Map:', dataMap);
+                    
+                    const result = labels.map(label => dataMap.get(label) || 0);
+                    console.log('Final Result:', result);
+                    
+                    return result;
                 };
 
-                // 1. Grafik Pengeluaran
+                // 1. Grafik Pengeluaran (PERBAIKAN)
+                const pengeluaranProcessed = processData(pengeluaranData, last6Months);
+                
                 new Chart(document.getElementById('pengeluaranChart'), {
                     type: 'bar',
-                    data: { labels: last6Months, datasets: [{ label: 'Total Pengeluaran (Rp)', data: processData(pengeluaranData, last6Months), backgroundColor: 'rgba(239, 68, 68, 0.5)', borderColor: 'rgba(239, 68, 68, 1)', borderWidth: 1 }] },
-                    options: { scales: { y: { beginAtZero: true } } }
+                    data: { 
+                        labels: last6Months, 
+                        datasets: [{ 
+                            label: 'Total Pengeluaran (Rp)', 
+                            data: pengeluaranProcessed, 
+                            backgroundColor: 'rgba(239, 68, 68, 0.5)', 
+                            borderColor: 'rgba(239, 68, 68, 1)', 
+                            borderWidth: 1 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { 
+                            y: { 
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        return 'Rp ' + value.toLocaleString('id-ID');
+                                    }
+                                }
+                            } 
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Pengeluaran: Rp ' + context.parsed.y.toLocaleString('id-ID');
+                                    }
+                                }
+                            }
+                        }
+                    }
                 });
 
-                // 2. Grafik Keuntungan
+                // 2. Grafik Keuntungan (gunakan logika yang sama)
+                const keuntunganProcessed = processData(keuntunganData, last6Months);
+                
                 new Chart(document.getElementById('keuntunganChart'), {
                     type: 'line',
-                    data: { labels: last6Months, datasets: [{ label: 'Total Keuntungan (Rp)', data: processData(keuntunganData, last6Months), backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2, tension: 0.3 }] },
-                    options: { scales: { y: { beginAtZero: true } } }
+                    data: { 
+                        labels: last6Months, 
+                        datasets: [{ 
+                            label: 'Total Keuntungan (Rp)', 
+                            data: keuntunganProcessed, 
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)', 
+                            borderColor: 'rgba(59, 130, 246, 1)', 
+                            borderWidth: 2, 
+                            tension: 0.3 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { 
+                            y: { 
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        return 'Rp ' + value.toLocaleString('id-ID');
+                                    }
+                                }
+                            } 
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Keuntungan: Rp ' + context.parsed.y.toLocaleString('id-ID');
+                                    }
+                                }
+                            }
+                        }
+                    }
                 });
 
-                // 3. Grafik Distribusi Stok
+                // 3. Grafik Distribusi Stok (tidak perlu diubah)
                 new Chart(document.getElementById('distribusiStokChart'), {
                     type: 'doughnut',
                     data: {
                         labels: distribusiStokData.map(item => item.nama_cabang),
-                        datasets: [{ label: 'Total Stok', data: distribusiStokData.map(item => item.total_stok), backgroundColor: ['rgba(236, 72, 153, 0.7)', 'rgba(168, 85, 247, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(245, 158, 11, 0.7)'] }]
+                        datasets: [{ 
+                            label: 'Total Stok', 
+                            data: distribusiStokData.map(item => item.total_stok), 
+                            backgroundColor: ['rgba(236, 72, 153, 0.7)', 'rgba(168, 85, 247, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(245, 158, 11, 0.7)'] 
+                        }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { 
+                                position: 'top' 
+                            } 
+                        } 
+                    }
                 });
             });
         </script>

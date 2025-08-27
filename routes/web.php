@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/laporan-induk/stok', [LaporanController::class, 'stokInduk'])->name('laporan.induk.stok');
         Route::get('/laporan-induk/pengeluaran', [LaporanController::class, 'rekapPengeluaran'])->name('laporan.induk.pengeluaran');
         Route::get('/laporan-induk/penjualan-cabang', [LaporanController::class, 'laporanPenjualanSemuaCabang'])->name('laporan.induk.penjualan');
+        Route::get('/laporan/induk/cashflow', [LaporanController::class, 'cashflowInduk'])->name('laporan.induk.cashflow');
 
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
         Route::get('/activity-logs/search', [ActivityLogController::class, 'search'])->name('activity-logs.search');

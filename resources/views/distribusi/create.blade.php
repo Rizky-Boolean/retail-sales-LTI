@@ -243,7 +243,7 @@
 
                     if (selectedSparepart) {
                         this.items[index].stok_induk = selectedSparepart.stok_induk;
-                        this.items[index].harga_kirim = selectedSparepart.harga_jual;;
+                        this.items[index].harga_kirim = selectedSparepart.harga_beli_terakhir;
                     } else {
                         this.items[index].stok_induk = 0;
                         this.items[index].harga_kirim = 0;
